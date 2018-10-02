@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string-array name="array_transaction_type_options">
+        <item>@string/type_expense</item>
+        <item>@string/type_income</item>
+    </string-array>
+
+    <string-array name="array_account_options">
+        <item>@string/account_cash</item>
+        <item>@string/account_bank</item>
+    </string-array>
+
+
+</resources>
