@@ -4,12 +4,13 @@ package com.example.shaf.wallety.Model;
 import android.arch.persistence.room.ColumnInfo;
 import android.arch.persistence.room.Entity;
 import android.arch.persistence.room.Ignore;
+import android.arch.persistence.room.Index;
 import android.arch.persistence.room.PrimaryKey;
 import android.support.annotation.NonNull;
 
-@Entity(tableName = "account_table")
+@Entity(tableName = "account_table",
+        indices = {@Index(value = {"accountName"}, unique = true)})
 public class Account {
-
 
     @PrimaryKey(autoGenerate = true)
     @NonNull
@@ -37,7 +38,6 @@ public class Account {
     }
 
 
-
     public String getAccountName() {
         return accountName;
     }
@@ -50,8 +50,18 @@ public class Account {
         this.accountBalance = accountBalance;
     }
 
+    public void transfer(Account account_from, Account account_to) {
+        // to implement
+    }
+
     @NonNull
     public int getAccountID() {
         return accountID;
+    }
+
+
+    public enum Account_init_data {
+        CASH,
+        BANK
     }
 }

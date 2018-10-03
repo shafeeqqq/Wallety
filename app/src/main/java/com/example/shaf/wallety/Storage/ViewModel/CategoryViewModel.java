@@ -4,6 +4,7 @@ import android.app.Application;
 import android.arch.lifecycle.AndroidViewModel;
 import android.arch.lifecycle.LiveData;
 import android.support.annotation.NonNull;
+import android.util.Log;
 
 import com.example.shaf.wallety.Model.Category;
 import com.example.shaf.wallety.Storage.CategoryRepository;
@@ -28,8 +29,10 @@ public class CategoryViewModel extends AndroidViewModel {
         return mAllCategories;
     }
 
-    public void insert(Category category) {
-        mRepository.insert(category);
+    public boolean insert(Category category) {
+        boolean success = mRepository.insert(category);
+        Log.e("Exceptioncatching-vm", String.valueOf(success));
+        return success;
     }
 
     public void delete(Category category) {
@@ -42,6 +45,10 @@ public class CategoryViewModel extends AndroidViewModel {
 
     public int getCategoryID(String categoryName) {
         return mRepository.getCategoryID(categoryName);
+    }
+
+    public String getCategoryName(int categoryID) {
+        return mRepository.getCategoryName(categoryID);
     }
 
 }

@@ -13,18 +13,17 @@ import android.support.constraint.ConstraintLayout;
 import android.support.design.widget.BottomNavigationView;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-
+import com.example.shaf.wallety.Model.Category;
 import com.example.shaf.wallety.Model.Transaction;
+import com.example.shaf.wallety.Storage.ViewModel.CategoryViewModel;
 import com.example.shaf.wallety.Storage.ViewModel.TransactsViewModel;
 import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.series.DataPoint;
@@ -80,7 +79,7 @@ public class MainActivity extends AppCompatActivity {
 
         getSupportActionBar().setElevation(0);
         getSupportActionBar().collapseActionView();
-        mTextMessage = (TextView) findViewById(R.id.message);
+        mTextMessage = findViewById(R.id.message);
         mRecyclerView = findViewById(R.id.recycler_view);
         graph = findViewById(R.id.graph);
 
@@ -88,7 +87,7 @@ public class MainActivity extends AppCompatActivity {
         final TransactsAdapter mAdapter = new TransactsAdapter(MainActivity.this);
         adapter_global = mAdapter;
 
-        BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
+        BottomNavigationView navigation = findViewById(R.id.navigation);
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
         navigation.setSelectedItemId(R.id.navigation_dashboard);
 
@@ -101,8 +100,16 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        mTransactsViewModel = ViewModelProviders.of(this).get(TransactsViewModel.class);
+        CategoryViewModel mCategoryViewModel = ViewModelProviders.of(this).get(CategoryViewModel.class);
+        mCategoryViewModel.getAllCategories().observe(this, new Observer<List<Category>>() {
+            @Override
+            public void onChanged(@Nullable final List<Category> categoryList) {
+                // Update the cached copy of the words in the adapter.
+                mAdapter.setCategoryList(categoryList);
+            }
+        });
 
+        mTransactsViewModel = ViewModelProviders.of(this).get(TransactsViewModel.class);
         mTransactsViewModel.getAllTransactions().observe(this, new Observer<List<Transaction>>() {
             @Override
             public void onChanged(@Nullable final List<Transaction> transactions) {
@@ -111,6 +118,7 @@ public class MainActivity extends AppCompatActivity {
                 adapter_global = mAdapter;
             }
         });
+
 
 
         mRecyclerView.setAdapter(mAdapter);
@@ -130,7 +138,7 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-        GraphView graphView = (GraphView) findViewById(R.id.graphView);
+        GraphView graphView = findViewById(R.id.graphView);
         LineGraphSeries<DataPoint> series = new LineGraphSeries<>(new DataPoint[] {
                 new DataPoint(0, 1),
                 new DataPoint(1, 5),
@@ -237,12 +245,22 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        return super.onCreateOptionsMenu(menu);
-
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+
+        //noinspection SimplifiableIfStatement
+        if (id == R.id.account_list) {
+            Intent intent = new Intent(this, AccountList_Activity.class);
+            startActivity(intent);
+            return true;
+        }
+
         return super.onOptionsItemSelected(item);
     }
 

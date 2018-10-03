@@ -8,7 +8,6 @@ import android.arch.persistence.room.Insert;
 import android.arch.persistence.room.Query;
 import android.arch.persistence.room.Update;
 
-
 import com.example.shaf.wallety.Model.Category;
 
 import java.util.List;
@@ -36,6 +35,9 @@ public interface CategoryDao {
 
     @Query("SELECT categoryID from category_table WHERE categoryName=:categoryName")
     int getCategoryID(String categoryName);
+
+    @Query("SELECT categoryName from category_table WHERE categoryID=:categoryID")
+    String getCategoryName(int categoryID);
 
 
 }

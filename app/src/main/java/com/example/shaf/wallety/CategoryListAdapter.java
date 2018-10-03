@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.support.annotation.NonNull;
+import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -32,8 +33,6 @@ public class CategoryListAdapter extends RecyclerView.Adapter<CategoryListAdapte
     public CategoryViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View itemView = LayoutInflater.from(mContext)
                 .inflate(R.layout.category_list_item, parent, false);
-
-
         return new CategoryViewHolder(itemView);
     }
 
@@ -44,9 +43,9 @@ public class CategoryListAdapter extends RecyclerView.Adapter<CategoryListAdapte
         if (mCategoryList != null) {
             Category current = mCategoryList.get(position);
             holder.categoryNameView.setText(current.getCategoryName());
-
             GradientDrawable colourIcon = (GradientDrawable) holder.categoryColourView.getBackground();
             colourIcon.setColor(Color.parseColor(current.getCategoryColour()));
+//            holder.categoryCardView.setCardBackgroundColor(Color.parseColor(current.getCategoryColour()));
 
         } else {
             Toast.makeText(mContext, "Error displaying data", Toast.LENGTH_LONG).show();
@@ -74,6 +73,7 @@ public class CategoryListAdapter extends RecyclerView.Adapter<CategoryListAdapte
 
         private TextView categoryNameView;
         private ImageView categoryColourView;
+        private CardView categoryCardView;
 
 
         public CategoryViewHolder(final View listItemView) {
@@ -81,6 +81,7 @@ public class CategoryListAdapter extends RecyclerView.Adapter<CategoryListAdapte
 
             categoryNameView = listItemView.findViewById(R.id.cat_name_text_view);
             categoryColourView = listItemView.findViewById(R.id.cat_colour_view);
+            categoryCardView = listItemView.findViewById(R.id.cat_card);
         }
     }
 

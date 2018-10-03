@@ -11,14 +11,13 @@
     <android.support.v7.widget.RecyclerView
         android:id="@+id/cat_recycler_view"
         android:layout_width="match_parent"
-        android:paddingTop="16dp"
+        android:layout_height="match_parent"
         android:paddingLeft="8dp"
         android:paddingRight="8dp"
-        android:layout_height="match_parent"
-        app:spanCount="2"
-        app:layout_constraintTop_toTopOf="parent"
+        android:paddingTop="16dp"
+        app:layoutManager="android.support.v7.widget.LinearLayoutManager"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"
-        app:layoutManager="android.support.v7.widget.GridLayoutManager"/>
+        app:layout_constraintTop_toTopOf="parent" />
 
 
 </android.support.v4.widget.NestedScrollView>

@@ -2,7 +2,7 @@ package com.example.shaf.wallety.Storage;
 
 import android.app.Application;
 import android.arch.lifecycle.LiveData;
-import android.content.AsyncQueryHandler;
+import android.database.sqlite.SQLiteConstraintException;
 import android.os.AsyncTask;
 import android.util.Log;
 
@@ -27,6 +27,28 @@ public class CategoryRepository {
         return this.allCategories;
     }
 
+    public boolean insert(Category category) {
+        boolean success=false;
+        try {
+            success = new insertAsyncTask(categoryDao).execute(category).get();
+
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return success;
+    }
+
+    public void delete(Category category) {
+        new deleteAsyncTask(categoryDao).execute(category);
+    }
+
+    public void update(Category category) {
+        new updateAsyncTask(categoryDao).execute(category);
+    }
+
     public int getCategoryID(String categoryName) {
         try {
             return new getCategoryIDAsyncTask(categoryDao).execute(categoryName).get();
@@ -39,24 +61,21 @@ public class CategoryRepository {
         return -1;
     }
 
-    public void insert(Category category) {
-        new insertAsyncTask(categoryDao).execute(category);
+
+    public String getCategoryName(int categoryID) {
+        try {
+            return new getCategoryNameAsyncTask(categoryDao).execute(categoryID).get();
+
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return "Unknown";
     }
 
-    public void delete(Category category) {
-        new deleteAsyncTask(categoryDao).execute(category);
-    }
 
-    public void update(Category category) {
-        new updateAsyncTask(categoryDao).execute(category);
-    }
-
-
-
-
-
-
-    private static class insertAsyncTask extends AsyncTask<Category, Void, Void> {
+    private static class insertAsyncTask extends AsyncTask<Category, Void, Boolean> {
 
         private CategoryDao mAsyncTaskDao;
 
@@ -65,9 +84,19 @@ public class CategoryRepository {
         }
 
         @Override
-        protected Void doInBackground(final Category... params) {
-            mAsyncTaskDao.insert(params[0]);
-            return null;
+        protected Boolean doInBackground(final Category... params) {
+            boolean success;
+            try {
+                mAsyncTaskDao.insert(params[0]);
+                success = true;
+
+            } catch (SQLiteConstraintException uniqueNameException){
+                Log.e("Exceptioncatching", "enter");
+                success = false;
+                Log.e("Exceptioncatching-catch", String.valueOf(success));
+            }
+            Log.e("Exceptioncatching-catch", String.valueOf(success));
+            return success;
         }
     }
 
@@ -118,6 +147,23 @@ public class CategoryRepository {
             String categoryName = params[0];
             int categoryID = mAsyncTaskDao.getCategoryID(categoryName);
             return categoryID;
+        }
+    }
+
+
+    private static class getCategoryNameAsyncTask extends AsyncTask<Integer, Void, String> {
+
+        private CategoryDao mAsyncTaskDao;
+
+        getCategoryNameAsyncTask(CategoryDao dao) {
+            mAsyncTaskDao = dao;
+        }
+
+        @Override
+        protected String doInBackground(final Integer... params) {
+            int categoryID = params[0];
+            String categoryName = mAsyncTaskDao.getCategoryName(categoryID);
+            return categoryName;
         }
     }
 }

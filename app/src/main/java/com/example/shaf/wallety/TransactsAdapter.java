@@ -1,6 +1,8 @@
 package com.example.shaf.wallety;
 
+import android.app.Activity;
 import android.content.Context;
+import android.graphics.Color;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -9,7 +11,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
-
+import com.example.shaf.wallety.Model.Category;
 import com.example.shaf.wallety.Model.Transaction;
 
 import java.text.SimpleDateFormat;
@@ -19,7 +21,9 @@ public class TransactsAdapter extends RecyclerView.Adapter<TransactsAdapter.Tran
 
 
     private Context mContext;
+    private Activity mActivity;
     private List<Transaction> mTransactions;
+    private List<Category> mCategoryList;
 
     public TransactsAdapter(Context context) {
         mContext = context;
@@ -29,6 +33,8 @@ public class TransactsAdapter extends RecyclerView.Adapter<TransactsAdapter.Tran
     @NonNull
     @Override
     public TransactsViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+
+
         View itemView = LayoutInflater.from(mContext)
                 .inflate(R.layout.list_item, parent, false);
 
@@ -42,9 +48,11 @@ public class TransactsAdapter extends RecyclerView.Adapter<TransactsAdapter.Tran
 
         if (mTransactions != null) {
             Transaction current = mTransactions.get(position);
+            Category currentCategory = getCategory(current.getCategoryID());
 
             holder.itemView.setText(current.getItem());
-            holder.categoryView.setText(String.valueOf(current.getCategoryID()));
+            holder.categoryView.setText(currentCategory.getCategoryName());
+            holder.categoryView.setTextColor(Color.parseColor(currentCategory.getCategoryColour()));
 
             if (current.getAccountID() == TransactEditorActivity.ACCT_CASH)
                 holder.acctView.setText(R.string.account_cash);
@@ -66,6 +74,16 @@ public class TransactsAdapter extends RecyclerView.Adapter<TransactsAdapter.Tran
         }
     }
 
+    private Category getCategory(int categoryID) {
+        Category category;
+
+        for (Category item: mCategoryList) {
+            if (item.getCategoryID() == categoryID)
+                return item;
+        }
+        return null;
+    }
+
     @Override
     public int getItemCount() {
         if (mTransactions != null)
@@ -73,10 +91,15 @@ public class TransactsAdapter extends RecyclerView.Adapter<TransactsAdapter.Tran
         return 0;
     }
 
-    void setTransactions(List<Transaction> transactions){
+    public void setTransactions(List<Transaction> transactions){
         mTransactions = transactions;
         notifyDataSetChanged();
 
+    }
+
+    public void setCategoryList(List<Category> categoryList) {
+        this.mCategoryList = categoryList;
+        notifyDataSetChanged();
     }
 
     public Transaction getTransacation(int position) {

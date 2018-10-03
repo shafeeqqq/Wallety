@@ -39,12 +39,29 @@
         <activity
             android:name=".CategoryListActivity"
             android:label="@string/title_activity_category_list"
-            android:parentActivityName=".TransactEditorActivity"
-            android:theme="@style/AppTheme.NoActionBar">
+            android:parentActivityName=".TransactEditorActivity">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.example.shaf.wallety.TransactEditorActivity" />
         </activity>
+        <activity
+            android:name=".AccountList_Activity"
+            android:label="@string/title_activity_account_list"
+            android:parentActivityName=".MainActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.example.shaf.wallety.MainActivity" />
+        </activity>
+
+        <activity
+            android:name=".AccountAdderActivity"
+            android:label="@string/title_activity_account_list"
+            android:parentActivityName=".AccountList_Activity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.example.shaf.wallety.AccountList_Activity" />
+        </activity>
+
     </application>
 
 </manifest>

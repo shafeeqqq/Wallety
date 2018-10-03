@@ -10,40 +10,40 @@ import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
-import com.example.shaf.wallety.Model.Category;
-import com.example.shaf.wallety.Storage.ViewModel.CategoryViewModel;
+import com.example.shaf.wallety.Model.Account;
+import com.example.shaf.wallety.Storage.ViewModel.AccountViewModel;
 
 import java.util.List;
+import java.util.Objects;
 
-public class CategoryListActivity extends AppCompatActivity {
+public class AccountList_Activity extends AppCompatActivity {
 
-    CategoryListAdapter adapter_global;
-    private CategoryViewModel mCategoryViewModel;
-    public static final int REQUEST_NEW_CATEGORY_DATA = 1024;
-
+    public static final int REQUEST_NEW_ACCOUNT_DATA = 1024;
+    private AccountViewModel mAccountViewModel;
+    private AccountList_Adapter adapter_global;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_category_list);
-        getSupportActionBar().setElevation(0);
 
-        setTitle(getString(R.string.title_category_list_activity));
-        RecyclerView mRecyclerView = findViewById(R.id.cat_recycler_view);
+        setContentView(R.layout.activity_account_list);
+        Objects.requireNonNull(getSupportActionBar()).setElevation(0);
+        setTitle("Account List");
 
-        final CategoryListAdapter mAdapter = new CategoryListAdapter(CategoryListActivity.this);
+        RecyclerView mRecyclerView = findViewById(R.id.account_recycler_view);
 
-        mCategoryViewModel = ViewModelProviders.of(this).get(CategoryViewModel.class);
-        mCategoryViewModel.getAllCategories().observe(this, new Observer<List<Category>>() {
+        final AccountList_Adapter mAdapter = new AccountList_Adapter(AccountList_Activity.this);
+
+        mAccountViewModel = ViewModelProviders.of(this).get(AccountViewModel.class);
+        mAccountViewModel.getAllAccounts().observe(this, new Observer<List<Account>>() {
             @Override
-            public void onChanged(@Nullable final List<Category> categoryList) {
+            public void onChanged(@Nullable final List<Account> accountList) {
                 // Update the cached copy of the words in the adapter.
-                mAdapter.setCategoryList(categoryList);
+                mAdapter.setAccountList(accountList);
                 adapter_global = mAdapter;
             }
         });
@@ -60,39 +60,45 @@ public class CategoryListActivity extends AppCompatActivity {
 
             @Override
             public void onLongItemClick(View view, int position) {
-               showDeleteDialogBox(position);
+                showDeleteDialogBox(position);
             }
         }));
 
-        FloatingActionButton fab = findViewById(R.id.fab);
+
+        FloatingActionButton fab = findViewById(R.id.account_list_fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent intent = new Intent(CategoryListActivity.this, CategoryAdderActivity.class);
-                startActivityForResult(intent, REQUEST_NEW_CATEGORY_DATA);
+                Intent intent = new Intent(AccountList_Activity.this, AccountAdderActivity.class);
+
+                startActivityForResult(intent, REQUEST_NEW_ACCOUNT_DATA);
             }
         });
 
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
     }
 
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if (data != null && resultCode == RESULT_OK && (requestCode == REQUEST_NEW_CATEGORY_DATA)) {
+        if (data != null && resultCode == RESULT_OK && (requestCode == REQUEST_NEW_ACCOUNT_DATA)) {
 
-            String categoryName = data.getStringExtra(getString(R.string.intent_category_name));
-            String categoryColour = data.getStringExtra(getString(R.string.intent_category_colour));
+            String accountName = data.getStringExtra("accountName");
+            double accountBalance = data.getDoubleExtra("accountBalance", 0);
 
- //           int update = data.getIntExtra("update",0);
+//            int update = data.getIntExtra("update",0);
 //            int position = data.getIntExtra("position", -401);
 
-    //        if (update == 0) {
-            Category category = new Category(categoryName, categoryColour);
-
-            boolean insertion_success = mCategoryViewModel.insert(category);
-
+//            if (update == 0) {
+            Account account = new Account(accountName, accountBalance);
+            mAccountViewModel.insert(account);
 
 //            } else if (update == 1 && position != -401 ) {
 //                int transactionID = adapter_global.getTransacation(position).getId();
@@ -100,16 +106,17 @@ public class CategoryListActivity extends AppCompatActivity {
 //                        unixTime, type, categoryID, accountID);
 //                mTransactsViewModel.update(transaction);
 //            }
-            Log.e("Exceptioncatc-activity", String.valueOf(insertion_success));
-            if (insertion_success)
-                Toast.makeText(this, R.string.saved_toast, Toast.LENGTH_LONG).show();
 
-            else
-                Toast.makeText(this, R.string.cat_InsertionException, Toast.LENGTH_LONG).show();
-        } 
-        
+            Toast.makeText(this, "Account Saved.", Toast.LENGTH_LONG).show();
+
+        }
+
+
         else {
-            Toast.makeText( getApplicationContext(), R.string.save_error, Toast.LENGTH_SHORT).show();
+            Toast.makeText(
+                    getApplicationContext(),
+                    "Unable to save data",
+                    Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -120,7 +127,6 @@ public class CategoryListActivity extends AppCompatActivity {
             // Respond to the action bar's Up/Home button
             case android.R.id.home:
                 finish();
-//                NavUtils.navigateUpFromSameTask(this)     // does not work!!!
                 return true;
         }
         return super.onOptionsItemSelected(item);
@@ -129,9 +135,9 @@ public class CategoryListActivity extends AppCompatActivity {
     private void showDeleteDialogBox(int position) {
         final int id = position;
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setMessage(R.string.delete_alertMsg);
+        builder.setMessage("Delete entry?");
 
-        builder.setPositiveButton(R.string.delete_dialog_option, new DialogInterface.OnClickListener() {
+        builder.setPositiveButton("Delete", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 deleteEntry(id);
@@ -150,8 +156,8 @@ public class CategoryListActivity extends AppCompatActivity {
     }
 
     private void deleteEntry(int position){
-        mCategoryViewModel.delete(adapter_global.getCategory(position));
-        Toast.makeText(this, "Deleted Entry", Toast.LENGTH_SHORT).show();
+        mAccountViewModel.delete(adapter_global.getAccount(position));
+        Toast.makeText(this, R.string.deletion_success, Toast.LENGTH_LONG).show();
     }
 
 }

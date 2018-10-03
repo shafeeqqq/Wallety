@@ -1,0 +1,10 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="com.example.shaf.wallety.CategoryListActivity">
+    <item
+        android:id="@+id/account_list"
+        android:orderInCategory="100"
+        android:title="@string/accounts"
+        app:showAsAction="never" />
+</menu>

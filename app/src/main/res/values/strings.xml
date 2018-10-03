@@ -111,5 +111,19 @@
         "when a user tries to pick up one of cards.\n\n"
     </string>
     <string name="action_settings">Settings</string>
+    <string name="title_activity_account_list">AccountList</string>
+    <string name="account_name">Account Name</string>
+    <string name="balance">Balance</string>
+    <string name="accounts">Accounts</string>
+    <string name="cat_InsertionException">Error. Category already exists.</string>
+    <string name="intent_category_name">categoryName</string>
+    <string name="intent_category_colour">categoryColour</string>
+    <string name="save_error">Unable to save data</string>
+    <string name="saved_toast">Saved</string>
+    <string name="title_category_list_activity">Category List</string>
+    <string name="delete_dialog_option">Delete</string>
+    <string name="delete_alertMsg">Delete entry?</string>
+    <string name="deletion_success">Deleted Entry</string>
+    <string name="sqlDbName">wallety_database</string>
 
 </resources>
