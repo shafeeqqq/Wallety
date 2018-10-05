@@ -3,12 +3,10 @@ package com.example.shaf.wallety;
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.arch.lifecycle.Observer;
-import android.arch.lifecycle.ViewModel;
 import android.arch.lifecycle.ViewModelProviders;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -23,13 +21,11 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.TextView;
 
 import com.example.shaf.wallety.Model.Account;
 import com.example.shaf.wallety.Model.Category;
-import com.example.shaf.wallety.Storage.Dao.CategoryDao;
 import com.example.shaf.wallety.Storage.ViewModel.AccountViewModel;
 import com.example.shaf.wallety.Storage.ViewModel.CategoryViewModel;
 
@@ -38,9 +34,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 public class TransactEditorActivity extends AppCompatActivity {
 
@@ -50,6 +44,8 @@ public class TransactEditorActivity extends AppCompatActivity {
     public static final int NOT_UPDATE = -8;
 
     private List<String> categoryNameList;
+    private List<String> accountNameList;
+    private ArrayAdapter<String> accountSpinnerAdapter;
     private int mPosition;
 
     private static final String UNKNOWN = "Unknown";
@@ -74,6 +70,10 @@ public class TransactEditorActivity extends AppCompatActivity {
     private Spinner mAccountSpinner;
     private Spinner mTTypeSpinner;
     private Spinner mCategorySpinner;
+
+
+
+
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
@@ -117,6 +117,7 @@ public class TransactEditorActivity extends AppCompatActivity {
 
 
         mAccountSpinner = findViewById(R.id.accountSpinner);
+        getAccountListData();
         setupAccountSpinner();
 
         mTTypeSpinner = findViewById(R.id.TTypeSpinner);
@@ -126,35 +127,33 @@ public class TransactEditorActivity extends AppCompatActivity {
         setupCategorySpinner();
 
         mCategoryViewModel = ViewModelProviders.of(this).get(CategoryViewModel.class);
-        mCategoryViewModel.getAllCategories().observe(this, new Observer<List<Category>>() {
+         mCategoryViewModel.getAllCategories().observe(this, new Observer<List<Category>>() {
             @Override
             public void onChanged(@Nullable final List<Category> categoryList) {
                 // Update the cached copy of the words in the adapter.
-                new Task().execute(categoryList);
-//                updateCategoryList(categoryList);
-//                Log.e("spinner-ld", String.valueOf(categoryList.size()));
-//                setupCategorySpinner();
+                new GetCategoryListTask().execute(categoryList);
+//
             }
         });
 
 
         if (mPosition == NOT_UPDATE) {
-            SimpleDateFormat dateFormatter = new SimpleDateFormat("dd MMM, yyyy");
+            SimpleDateFormat dateFormatter = new SimpleDateFormat("dd MMM, yyyy hh:mm");
             String dateToDisplay = dateFormatter.format(now.getTime());
             mDateTextView.setText(dateToDisplay);
         }
 
 
 
-        mAccountViewModel= ViewModelProviders.of(this).get(AccountViewModel.class);
-        mAccountViewModel.getAllAccounts().observe(this, new Observer<List<Account>>() {
-            @Override
-            public void onChanged(@Nullable final List<Account> accountList) {
-                // Update the cached copy of the words in the adapter.
-                updateAccountList(accountList);
-                setupAccountSpinner();
-            }
-        });
+//        mAccountViewModel= ViewModelProviders.of(this).get(AccountViewModel.class);
+//        mAccountViewModel.getAllAccounts().observe(this, new Observer<List<Account>>() {
+//            @Override
+//            public void onChanged(@Nullable final List<Account> accountList) {
+//                // Update the cached copy of the words in the adapter.
+//                updateAccountList(accountList);
+//                setupAccountSpinner();
+//            }
+//        });
     }
 
     private void updateAccountList(List<Account> accountList) {
@@ -165,6 +164,23 @@ public class TransactEditorActivity extends AppCompatActivity {
     private void updateCategoryList(List<Category> categoryList) {
         mCategoryList.clear();
         mCategoryList.addAll(categoryList);
+    }
+
+    private void getAccountListData() {
+
+        mAccountViewModel= ViewModelProviders.of(this).get(AccountViewModel.class);
+        mAccountViewModel.getAllAccounts().observe(this, new Observer<List<Account>>() {
+            @Override
+            public void onChanged(@Nullable final List<Account> accountList) {
+                // Update the cached copy of the words in the adapter.
+//                mAccountList = accountList;
+                updateAccountList(accountList);
+                setupAccountSpinner();
+//                accountNameList = getAccountNameList();
+//                accountSpinnerAdapter.notifyDataSetChanged();
+//                mAccountSpinner.setAdapter(accountSpinnerAdapter);
+            }
+        });
     }
 
     private void setupTTypeSpinner() {
@@ -199,9 +215,9 @@ public class TransactEditorActivity extends AppCompatActivity {
 
 
     private void setupAccountSpinner() {
-        List<String> accountNameList = getAccountNameList();
+        accountNameList = getAccountNameList();
 
-        ArrayAdapter<String> accountSpinnerAdapter = new ArrayAdapter<>(this,
+        accountSpinnerAdapter = new ArrayAdapter<>(this,
                 android.R.layout.simple_spinner_item, accountNameList);
 
         // Specify dropdown layout style
@@ -246,33 +262,30 @@ public class TransactEditorActivity extends AppCompatActivity {
         // Specify dropdown layout style
         categorySpinnerAdapter.setDropDownViewResource(android.R.layout.simple_dropdown_item_1line);
 
-        // Apply the adapter to the spinner
-        runOnUiThread(new Runnable() {
 
+        // methods on spinner must be run on the Ui thread; not async task
+        runOnUiThread(new Runnable() {
             @Override
             public void run() {
+                // Apply the adapter to the spinner
+                mCategorySpinner.setAdapter(categorySpinnerAdapter);
 
-                // Stuff that updates the UI
+                // Set the integer mSelected to the constant values
+                mCategorySpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                    @Override
+                    public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                        String selection = (String) parent.getItemAtPosition(position);
 
+                        if (!TextUtils.isEmpty(selection))
+                            mCategoryID = mCategoryViewModel.getCategoryID(selection);
+                    }
 
-        mCategorySpinner.setAdapter(categorySpinnerAdapter);
-
-        // Set the integer mSelected to the constant values
-        mCategorySpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                String selection = (String) parent.getItemAtPosition(position);
-
-                if (!TextUtils.isEmpty(selection))
-                    mCategoryID = mCategoryViewModel.getCategoryID(selection);
-            }
-
-            // Because AdapterView is an abstract class, onNothingSelected must be defined
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-                mCategoryID = -1;
-            }
-        });
+                    // Because AdapterView is an abstract class, onNothingSelected must be defined
+                    @Override
+                    public void onNothingSelected(AdapterView<?> parent) {
+                        mCategoryID = -1;
+                    }
+                });
 
             }
         });
@@ -294,22 +307,20 @@ public class TransactEditorActivity extends AppCompatActivity {
         int type = mIntent.getIntExtra("type", TransactEditorActivity.TYPE_EXPENSE);
         int accountID = mIntent.getIntExtra("accountID", -1);
         int categoryID = mIntent.getIntExtra("categoryID", -1);
-        Log.e("spinner-load", String.valueOf(mIntent.getIntExtra("categoryID", -1)));
         String unixTime = mIntent.getStringExtra("unixTime");
 
         if (unixTime != null) {
             Date dateObj = new Date(Long.valueOf(unixTime));
-            SimpleDateFormat dateFormatter = new SimpleDateFormat("dd MMM, yyyy");
+            SimpleDateFormat dateFormatter = new SimpleDateFormat("dd MMM, yyyy hh:mm");
             String dateToDisplay = dateFormatter.format(dateObj);
             mDateTextView.setText(dateToDisplay);
+            mUnixTime = String.valueOf(dateObj.getTime());
         }
 
-        Log.e("spinner-load-c", String.valueOf(categoryID));
         mItemEditText.setText(item);
         mAmountEditText.setText(String.valueOf(amount));
         mTTypeSpinner.setSelection(type);
-        Object position = mCategorySpinner.getAdapter().getCount();
-        Log.e("spinnner-obj", String.valueOf(position));
+
         mAccountSpinner.setSelection(accountID-1);
         mCategorySpinner.setSelection(categoryID-1);
 
@@ -332,7 +343,6 @@ public class TransactEditorActivity extends AppCompatActivity {
 
         parseDate();       // update mUnixTime variable, assign month and year
 
-        Log.e("cate_", String.valueOf(mCategoryID));
 
         replyIntent.putExtra("item", item);
         replyIntent.putExtra("amount", amount);
@@ -430,10 +440,17 @@ public class TransactEditorActivity extends AppCompatActivity {
         year = cal.get(Calendar.YEAR);
     }
 
-    private  class Task extends AsyncTask<List<Category>, Void, Void> {
+    private  class GetCategoryListTask extends AsyncTask<List<Category>, Void, Void> {
 
 
-        public Task() {
+        public GetCategoryListTask() {
+
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            getAccountListData();
 
         }
 
