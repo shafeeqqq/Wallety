@@ -86,8 +86,7 @@ public class TransactionRepository {
             int year = params[0].getYear();
             String unixTime = params[0].getUnixTime();
             int type = params[0].getType();
-            int categoryID = 0;
-          //  int categoryID = params[0].getCategoryID();
+            int categoryID = params[0].getCategoryID();
             int accountID = params[0].getAccountID();
 
             mAsyncTaskDao.updateTransaction(transactionId, item, amount, month, year, unixTime, type, categoryID, accountID);

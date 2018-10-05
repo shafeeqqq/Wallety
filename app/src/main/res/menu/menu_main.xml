@@ -4,7 +4,13 @@
     tools:context="com.example.shaf.wallety.CategoryListActivity">
     <item
         android:id="@+id/account_list"
-        android:orderInCategory="100"
+        android:orderInCategory="1"
         android:title="@string/accounts"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/category_list"
+        android:orderInCategory="1"
+        android:title="@string/category"
         app:showAsAction="never" />
 </menu>

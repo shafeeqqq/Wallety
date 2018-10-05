@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.arch.lifecycle.Observer;
 import android.arch.lifecycle.ViewModelProviders;
+import android.arch.persistence.room.util.StringUtil;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
@@ -21,8 +22,10 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.shaf.wallety.Model.Account;
 import com.example.shaf.wallety.Model.Category;
 import com.example.shaf.wallety.Model.Transaction;
+import com.example.shaf.wallety.Storage.ViewModel.AccountViewModel;
 import com.example.shaf.wallety.Storage.ViewModel.CategoryViewModel;
 import com.example.shaf.wallety.Storage.ViewModel.TransactsViewModel;
 import com.jjoe64.graphview.GraphView;
@@ -100,12 +103,21 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        CategoryViewModel mCategoryViewModel = ViewModelProviders.of(this).get(CategoryViewModel.class);
-        mCategoryViewModel.getAllCategories().observe(this, new Observer<List<Category>>() {
+        CategoryViewModel categoryViewModel = ViewModelProviders.of(this).get(CategoryViewModel.class);
+        categoryViewModel.getAllCategories().observe(this, new Observer<List<Category>>() {
             @Override
             public void onChanged(@Nullable final List<Category> categoryList) {
                 // Update the cached copy of the words in the adapter.
                 mAdapter.setCategoryList(categoryList);
+            }
+        });
+
+        AccountViewModel accountViewModel = ViewModelProviders.of(this).get(AccountViewModel.class);
+        accountViewModel.getAllAccounts().observe(this, new Observer<List<Account>>() {
+            @Override
+            public void onChanged(@Nullable final List<Account> accountList) {
+                // Update the cached copy of the words in the adapter.
+                mAdapter.setAccountList(accountList);
             }
         });
 
@@ -156,28 +168,33 @@ public class MainActivity extends AppCompatActivity {
         if (data != null && resultCode == RESULT_OK && (requestCode == REQUEST_TRANSACTION_DATA ||
                 requestCode == REQUEST_UPDATE_DATA)) {
 
+
+            final int default_error_value = -1;
+
             String item = data.getStringExtra("item");
-            double amount = data.getDoubleExtra("amount", -1);
-            int month = data.getIntExtra("month", -1);
-            int year = data.getIntExtra("year", -1);
+            double amount = data.getDoubleExtra("amount", default_error_value);
+            int month = data.getIntExtra("month", default_error_value);
+            int year = data.getIntExtra("year", default_error_value);
             String unixTime = data.getStringExtra("unixTime");
             int type = data.getIntExtra("type", TransactEditorActivity.TYPE_EXPENSE);
-            int accountID = data.getIntExtra("accountID", TransactEditorActivity.ACCT_CASH);
-            int categoryID = data.getIntExtra("categoryID", -1);
+            int accountID = data.getIntExtra("accountID", default_error_value);
+            int categoryID = data.getIntExtra("categoryID", default_error_value);
 
-            int update = data.getIntExtra("update",0);
+            boolean update = data.getBooleanExtra("update",false);
             int position = data.getIntExtra("position", -401);
 
-            if (update == 0) {
+            Log.e("cate_m", String.valueOf(categoryID));
+            if (!update) {
                 Transaction transaction = new Transaction(item, amount, month, year, unixTime,
                         type, categoryID, accountID);
 
                 mTransactsViewModel.insert(transaction);
 
-            } else if (update == 1 && position != -401 ) {
-                int transactionID = adapter_global.getTransacation(position).getId();
+            } else if (update && position != -401 ) {
+                int transactionID = adapter_global.getTransaction(position).getId();
                 Transaction transaction = new Transaction(transactionID, item, amount, month, year,
                         unixTime, type, categoryID, accountID);
+                Log.e("cate_m", String.valueOf(categoryID) + "Enter");
                 mTransactsViewModel.update(transaction);
             }
 
@@ -185,12 +202,15 @@ public class MainActivity extends AppCompatActivity {
 
         }
 
+        else if (resultCode == RESULT_CANCELED){
+            Toast.makeText(this, "Draft Deleted", Toast.LENGTH_SHORT).show();
+        }
+
 
         else {
-            Log.e("FAIL", String.valueOf(resultCode) + String.valueOf(data == null));
+
             Toast.makeText(
-                    getApplicationContext(),
-                    "Unable to save data",
+                    getApplicationContext(), "Error saving data",
                     Toast.LENGTH_LONG).show();
         }
     }
@@ -220,7 +240,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void deleteEntry(int position){
-        mTransactsViewModel.delete(adapter_global.getTransacation(position));
+        mTransactsViewModel.delete(adapter_global.getTransaction(position));
         Toast.makeText(this, "Deleted entry.", Toast.LENGTH_SHORT).show();
     }
 
@@ -230,14 +250,15 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = new Intent(MainActivity.this, TransactEditorActivity.class);
         intent.putExtra("position", position);
 
-        Transaction transaction = adapter_global.getTransacation(position);
+        Transaction transaction = adapter_global.getTransaction(position);
 
         intent.putExtra("item", transaction.getItem());
         intent.putExtra("amount", transaction.getAmount());
         intent.putExtra("unixTime", transaction.getUnixTime());
-        intent.putExtra("categoryID", transaction.getCategoryID());
         intent.putExtra("type", transaction.getType());
         intent.putExtra("accountID", transaction.getAccountID());
+        Log.e("spinner", String.valueOf(transaction.getCategoryID()));
+        intent.putExtra("categoryID", transaction.getCategoryID());
 
         startActivityForResult(intent, REQUEST_UPDATE_DATA);
 
@@ -257,6 +278,11 @@ public class MainActivity extends AppCompatActivity {
         //noinspection SimplifiableIfStatement
         if (id == R.id.account_list) {
             Intent intent = new Intent(this, AccountList_Activity.class);
+            startActivity(intent);
+            return true;
+        }
+        else if (id == R.id.category_list) {
+            Intent intent = new Intent(this, CategoryListActivity.class);
             startActivity(intent);
             return true;
         }

@@ -1,11 +1,15 @@
 package com.example.shaf.wallety;
 
 import android.annotation.SuppressLint;
+import android.app.AlertDialog;
 import android.arch.lifecycle.Observer;
+import android.arch.lifecycle.ViewModel;
 import android.arch.lifecycle.ViewModelProviders;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.design.widget.TextInputEditText;
@@ -23,7 +27,9 @@ import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import com.example.shaf.wallety.Model.Account;
 import com.example.shaf.wallety.Model.Category;
+import com.example.shaf.wallety.Storage.Dao.CategoryDao;
 import com.example.shaf.wallety.Storage.ViewModel.AccountViewModel;
 import com.example.shaf.wallety.Storage.ViewModel.CategoryViewModel;
 
@@ -41,25 +47,27 @@ public class TransactEditorActivity extends AppCompatActivity {
 
     public static final int TYPE_EXPENSE = 0;
     public static final int TYPE_INCOME = 1;
-    public static final int ACCT_CASH = 100;
-    public static final int ACCT_BANK = 101;
+    public static final int NOT_UPDATE = -8;
+
+    private List<String> categoryNameList;
+    private int mPosition;
+
     private static final String UNKNOWN = "Unknown";
-    ArrayAdapter<String> categorySpinnerAdapter;
+
     TextView mDateTextView;
     Intent mIntent;
     Context mContext = this;
     private final String LOG_TAG = mContext.getClass().getSimpleName();
-    SharedPreferences mSharedPreferences;
     private CategoryViewModel mCategoryViewModel;
     private AccountViewModel mAccountViewModel;
     private List<Category> mCategoryList = new ArrayList<Category>();
-    private int mAccount = ACCT_CASH;
+    private List<Account> mAccountList = new ArrayList<Account>();
+    private int mAccountID;
     private int mTType = TYPE_EXPENSE;
     private int mCategoryID;
     private String mUnixTime;
     private int year;
     private int month;
-    private int mPosition = -100;
 
     private TextInputEditText mItemEditText;
     private TextInputEditText mAmountEditText;
@@ -75,8 +83,9 @@ public class TransactEditorActivity extends AppCompatActivity {
 
         setTitle("New Entry");
         getSupportActionBar().setElevation(0);
+
         mIntent = getIntent();
-        mPosition = mIntent.getIntExtra("position", -100);      // for updates
+        mPosition = mIntent.getIntExtra("position", NOT_UPDATE);      // for updates
 
 
         TextView categoryTextView = findViewById(R.id.category_header);
@@ -114,36 +123,49 @@ public class TransactEditorActivity extends AppCompatActivity {
         setupTTypeSpinner();
 
         mCategorySpinner = findViewById(R.id.categorySpinner);
-
-        if (mPosition != -100) {
-            loadData(mPosition);
-
-        } else {
-            SimpleDateFormat dateFormatter = new SimpleDateFormat("dd MMM, yyyy");
-            String dateToDisplay = dateFormatter.format(now.getTime());
-            mDateTextView.setText(dateToDisplay);
-        }
+        setupCategorySpinner();
 
         mCategoryViewModel = ViewModelProviders.of(this).get(CategoryViewModel.class);
         mCategoryViewModel.getAllCategories().observe(this, new Observer<List<Category>>() {
             @Override
             public void onChanged(@Nullable final List<Category> categoryList) {
                 // Update the cached copy of the words in the adapter.
-                updateCategoryList(categoryList);
-                setupCategorySpinner();
+                new Task().execute(categoryList);
+//                updateCategoryList(categoryList);
+//                Log.e("spinner-ld", String.valueOf(categoryList.size()));
+//                setupCategorySpinner();
             }
         });
 
 
+        if (mPosition == NOT_UPDATE) {
+            SimpleDateFormat dateFormatter = new SimpleDateFormat("dd MMM, yyyy");
+            String dateToDisplay = dateFormatter.format(now.getTime());
+            mDateTextView.setText(dateToDisplay);
+        }
+
+
+
+        mAccountViewModel= ViewModelProviders.of(this).get(AccountViewModel.class);
+        mAccountViewModel.getAllAccounts().observe(this, new Observer<List<Account>>() {
+            @Override
+            public void onChanged(@Nullable final List<Account> accountList) {
+                // Update the cached copy of the words in the adapter.
+                updateAccountList(accountList);
+                setupAccountSpinner();
+            }
+        });
+    }
+
+    private void updateAccountList(List<Account> accountList) {
+        mAccountList.clear();
+        mAccountList.addAll(accountList);
     }
 
     private void updateCategoryList(List<Category> categoryList) {
         mCategoryList.clear();
         mCategoryList.addAll(categoryList);
-
     }
-
-
 
     private void setupTTypeSpinner() {
         // Create adapter for spinner. The list options are from the String array
@@ -168,8 +190,6 @@ public class TransactEditorActivity extends AppCompatActivity {
                         mTType = TYPE_INCOME; // Income
                 }
             }
-
-            // Because AdapterView is an abstract class, onNothingSelected must be defined
             @Override
             public void onNothingSelected(AdapterView<?> parent) {
                 mTType = TYPE_EXPENSE;
@@ -179,8 +199,10 @@ public class TransactEditorActivity extends AppCompatActivity {
 
 
     private void setupAccountSpinner() {
-        ArrayAdapter accountSpinnerAdapter = ArrayAdapter.createFromResource(this,
-                R.array.array_account_options, android.R.layout.simple_spinner_item);
+        List<String> accountNameList = getAccountNameList();
+
+        ArrayAdapter<String> accountSpinnerAdapter = new ArrayAdapter<>(this,
+                android.R.layout.simple_spinner_item, accountNameList);
 
         // Specify dropdown layout style
         accountSpinnerAdapter.setDropDownViewResource(android.R.layout.simple_dropdown_item_1line);
@@ -193,34 +215,46 @@ public class TransactEditorActivity extends AppCompatActivity {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 String selection = (String) parent.getItemAtPosition(position);
-                if (!TextUtils.isEmpty(selection)) {
-                    if (selection.equals(getString(R.string.account_cash))) {
-                        mAccount = ACCT_CASH; // Expense
-                    } else
-                        mAccount = ACCT_BANK; // Income
-                }
+
+                if (!TextUtils.isEmpty(selection))
+                    mAccountID = mAccountViewModel.getAccountID(selection);
             }
 
             // Because AdapterView is an abstract class, onNothingSelected must be defined
             @Override
             public void onNothingSelected(AdapterView<?> parent) {
-                mAccount = ACCT_CASH;
+                mCategoryID = -1;
             }
         });
+    }
 
+    private List<String> getAccountNameList() {
+        List<String> accountNameList = new ArrayList<String>();
+        for (int i=0; i<mAccountList.size(); i++)
+            accountNameList.add(mAccountList.get(i).getAccountName());
+        return accountNameList;
     }
 
 
     private void setupCategorySpinner() {
-        List<String> categoryNameList = getCategoryNameList();
+        categoryNameList = getCategoryNameList();
+        Log.e("spinner-size", categoryNameList.size() + "");
 
-        ArrayAdapter<String> categorySpinnerAdapter = new ArrayAdapter<String>(this,
+        final ArrayAdapter<String> categorySpinnerAdapter = new ArrayAdapter<String>(this,
                 android.R.layout.simple_spinner_item, categoryNameList);
 
         // Specify dropdown layout style
         categorySpinnerAdapter.setDropDownViewResource(android.R.layout.simple_dropdown_item_1line);
 
         // Apply the adapter to the spinner
+        runOnUiThread(new Runnable() {
+
+            @Override
+            public void run() {
+
+                // Stuff that updates the UI
+
+
         mCategorySpinner.setAdapter(categorySpinnerAdapter);
 
         // Set the integer mSelected to the constant values
@@ -240,52 +274,27 @@ public class TransactEditorActivity extends AppCompatActivity {
             }
         });
 
-
+            }
+        });
     }
 
 
     private List getCategoryNameList() {
-
-        List<String> categoryNameList = new ArrayList<String>();
+        List<String> categoryNameList = new ArrayList<>();
         for (int i=0; i<mCategoryList.size(); i++)
             categoryNameList.add(mCategoryList.get(i).getCategoryName());
+
         return categoryNameList;
     }
 
-    private void parseDate() {
-        SimpleDateFormat getDate = new SimpleDateFormat("dd MMM, yyyy");
-
-        Calendar cal = Calendar.getInstance();
-
-        Date date_to_save = new Date();
-        try {
-            // get String data from dateTextView
-            date_to_save = getDate.parse(mDateTextView.getText().toString());
-
-        } catch (ParseException e) {
-            e.printStackTrace();
-        }
-
-        // convert string to long
-        long dateToSaveLong = date_to_save.getTime();
-        cal.setTime(date_to_save);
-        month = cal.get(Calendar.MONTH);
-        year = cal.get(Calendar.YEAR);
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-        setupCategorySpinner();
-    }
-
-    private void loadData(int mPosition) {
+    private void loadData() {
 
         String item = mIntent.getStringExtra("item");
         double amount = mIntent.getDoubleExtra("amount", -1);
         int type = mIntent.getIntExtra("type", TransactEditorActivity.TYPE_EXPENSE);
-        int account = mIntent.getIntExtra("accountID", TransactEditorActivity.ACCT_CASH);
-        int category = mIntent.getIntExtra("categoryID", -1);
+        int accountID = mIntent.getIntExtra("accountID", -1);
+        int categoryID = mIntent.getIntExtra("categoryID", -1);
+        Log.e("spinner-load", String.valueOf(mIntent.getIntExtra("categoryID", -1)));
         String unixTime = mIntent.getStringExtra("unixTime");
 
         if (unixTime != null) {
@@ -295,23 +304,35 @@ public class TransactEditorActivity extends AppCompatActivity {
             mDateTextView.setText(dateToDisplay);
         }
 
+        Log.e("spinner-load-c", String.valueOf(categoryID));
         mItemEditText.setText(item);
         mAmountEditText.setText(String.valueOf(amount));
         mTTypeSpinner.setSelection(type);
-        mAccountSpinner.setSelection(account - 100);
+        Object position = mCategorySpinner.getAdapter().getCount();
+        Log.e("spinnner-obj", String.valueOf(position));
+        mAccountSpinner.setSelection(accountID-1);
+        mCategorySpinner.setSelection(categoryID-1);
 
     }
 
     private void saveData() {
 
-        Log.e("FAIL", "entered save data beginning");
+        Intent replyIntent = new Intent();
+        setResult(RESULT_CANCELED, replyIntent);
+        double amount = 0.00;
 
         String item = mItemEditText.getText().toString().trim();
-        double amount = Double.valueOf(mAmountEditText.getText().toString().trim());
+        String amountText = mAmountEditText.getText().toString().trim();
+        if (!amountText.isEmpty()) {
+            amount = Double.valueOf(amountText);
+        }
+        else {
+            showDraftDialog();
+        }
 
-        parseDate();       // update mUnixTime variable
+        parseDate();       // update mUnixTime variable, assign month and year
 
-        Intent replyIntent = new Intent();
+        Log.e("cate_", String.valueOf(mCategoryID));
 
         replyIntent.putExtra("item", item);
         replyIntent.putExtra("amount", amount);
@@ -320,21 +341,47 @@ public class TransactEditorActivity extends AppCompatActivity {
         replyIntent.putExtra("unixTime", mUnixTime);
         replyIntent.putExtra("categoryID", mCategoryID);
         replyIntent.putExtra("type", mTType);
-        replyIntent.putExtra("accountID", mAccount);
+        replyIntent.putExtra("accountID", mAccountID);
 
-        if (mPosition == -100)
-            replyIntent.putExtra("update", 0);
+        boolean update = false;
+        if (mPosition == NOT_UPDATE)
+            replyIntent.putExtra("update", update);
+
         else {
-            replyIntent.putExtra("update", 1);
+            update = true;
+            replyIntent.putExtra("update", update);
             replyIntent.putExtra("position", mPosition);
         }
 
-        Log.e("FAIL", "data::: " + item + amount + month + year+ mUnixTime + mCategoryID + mTType + mAccount);
-        setResult(RESULT_OK, replyIntent);
+        if (!amountText.isEmpty()) {
+            setResult(RESULT_OK, replyIntent);
+            finish();
+        }
 
-        Log.e("FAIL", "intent::: " + replyIntent.getDataString());
-        finish();
+    }
 
+    private void showDraftDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage("Delete Draft?");
+
+        builder.setPositiveButton("Delete", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                if (dialog != null) dialog.dismiss();
+                setResult(RESULT_CANCELED);
+                finish();
+            }
+        });
+
+        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                if (dialog != null) dialog.dismiss();
+            }
+        });
+
+        AlertDialog alertDialog = builder.create();
+        alertDialog.show();
     }
 
 
@@ -360,6 +407,50 @@ public class TransactEditorActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private void parseDate() {
+        SimpleDateFormat getDate = new SimpleDateFormat("dd MMM, yyyy");
+
+        Calendar cal = Calendar.getInstance();
+
+        Date date_to_save = new Date();
+        try {
+            // get String data from dateTextView
+            date_to_save = getDate.parse(mDateTextView.getText().toString());
+
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+
+        // convert string to long
+        long dateToSaveLong = date_to_save.getTime();
+        cal.setTime(date_to_save);
+        month = cal.get(Calendar.MONTH);
+        year = cal.get(Calendar.YEAR);
+    }
+
+    private  class Task extends AsyncTask<List<Category>, Void, Void> {
+
+
+        public Task() {
+
+        }
+
+        @Override
+        protected Void doInBackground(List<Category>... lists) {
+            updateCategoryList(lists[0]);
+            Log.e("spinner-ld", String.valueOf(lists[0].size()));
+            setupCategorySpinner();
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+            if (mPosition != NOT_UPDATE)
+                loadData();
+        }
     }
 
 }

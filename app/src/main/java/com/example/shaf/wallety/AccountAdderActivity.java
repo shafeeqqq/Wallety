@@ -44,7 +44,6 @@ public class AccountAdderActivity extends AppCompatActivity {
         replyIntent.putExtra("accountName", accountName);
         replyIntent.putExtra("accountBalance", accountBalance);
 
-
 //        if (mPosition == -100)
 //            replyIntent.putExtra("update", 0);
 //

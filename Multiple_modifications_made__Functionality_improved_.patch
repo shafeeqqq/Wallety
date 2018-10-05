@@ -1,0 +1,1670 @@
+Index: app/src/main/java/com/example/shaf/wallety/Model/Account.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/java/com/example/shaf/wallety/Model/Account.java	(revision f7afc82a9f73983acc1a8753bc2b7f4bcb0d01a8)
++++ app/src/main/java/com/example/shaf/wallety/Model/Account.java	(date 1538590383000)
+@@ -4,13 +4,14 @@
+ import android.arch.persistence.room.ColumnInfo;
+ import android.arch.persistence.room.Entity;
+ import android.arch.persistence.room.Ignore;
++import android.arch.persistence.room.Index;
+ import android.arch.persistence.room.PrimaryKey;
+ import android.support.annotation.NonNull;
+ 
+-@Entity(tableName = "account_table")
++@Entity(tableName = "account_table",
++        indices = {@Index(value = {"accountName"}, unique = true)})
+ public class Account {
+ 
+-
+     @PrimaryKey(autoGenerate = true)
+     @NonNull
+     @ColumnInfo(name = "accountID")
+@@ -37,7 +38,6 @@
+     }
+ 
+ 
+-
+     public String getAccountName() {
+         return accountName;
+     }
+@@ -50,8 +50,18 @@
+         this.accountBalance = accountBalance;
+     }
+ 
++    public void transfer(Account account_from, Account account_to) {
++        // to implement
++    }
++
+     @NonNull
+     public int getAccountID() {
+         return accountID;
+     }
++
++
++    public enum Account_init_data {
++        CASH,
++        BANK
++    }
+ }
+Index: app/src/main/java/com/example/shaf/wallety/Model/Category.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/java/com/example/shaf/wallety/Model/Category.java	(revision f7afc82a9f73983acc1a8753bc2b7f4bcb0d01a8)
++++ app/src/main/java/com/example/shaf/wallety/Model/Category.java	(date 1538590383000)
+@@ -3,10 +3,12 @@
+ import android.arch.persistence.room.ColumnInfo;
+ import android.arch.persistence.room.Entity;
+ import android.arch.persistence.room.Ignore;
++import android.arch.persistence.room.Index;
+ import android.arch.persistence.room.PrimaryKey;
+ import android.support.annotation.NonNull;
+ 
+-@Entity(tableName = "category_table")
++@Entity(tableName = "category_table",
++        indices = {@Index(value = {"categoryName"}, unique = true)})
+ public class Category {
+ 
+     @PrimaryKey(autoGenerate = true)
+@@ -14,13 +16,13 @@
+     @ColumnInfo(name = "categoryID")
+     private int categoryID;
+ 
++    @NonNull
+     @ColumnInfo(name = "categoryName")
+     private String categoryName;
+ 
+     @ColumnInfo(name = "categoryColour")
+     private String categoryColour;
+ 
+-
+     @Ignore
+     public Category(String categoryName, String colour) {
+         this.categoryName = categoryName;
+@@ -47,4 +49,32 @@
+     public int getCategoryID() {
+         return categoryID;
+     }
++
++
++
++    public enum Category_init_data {
++        FOOD        ("#FF5722"),
++        GROCERIES   ("#2F5722"),
++        TRANSPORT   ("#294823"),
++        EDUCATION   ("#234322"),
++        PHONE       ("#281f20"),
++        ENTERTAINMENT       ("#2f4322"),
++        HEALTH      ("#ac1020"),
++        EXTRACURRICULAR    ("#29ed23"),
++        GIFT        ("#8fe823"),
++        RENT        ("#9f2823"),
++        UTILITIES   ("#294ee3"),
++        OTHER       ("#978293");
++
++        private final String categoryColour;
++
++        Category_init_data(String colour) {
++            this.categoryColour = colour;
++        }
++
++        public String categoryColour() {
++            return categoryColour;
++        }
++    }
++
+ }
+Index: app/src/main/java/com/example/shaf/wallety/Storage/Dao/CategoryDao.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/java/com/example/shaf/wallety/Storage/Dao/CategoryDao.java	(revision f7afc82a9f73983acc1a8753bc2b7f4bcb0d01a8)
++++ app/src/main/java/com/example/shaf/wallety/Storage/Dao/CategoryDao.java	(date 1538590384000)
+@@ -8,7 +8,6 @@
+ import android.arch.persistence.room.Query;
+ import android.arch.persistence.room.Update;
+ 
+-
+ import com.example.shaf.wallety.Model.Category;
+ 
+ import java.util.List;
+@@ -37,5 +36,8 @@
+     @Query("SELECT categoryID from category_table WHERE categoryName=:categoryName")
+     int getCategoryID(String categoryName);
+ 
++    @Query("SELECT categoryName from category_table WHERE categoryID=:categoryID")
++    String getCategoryName(int categoryID);
++
+ 
+ }
+Index: app/src/main/java/com/example/shaf/wallety/Storage/ViewModel/CategoryViewModel.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/java/com/example/shaf/wallety/Storage/ViewModel/CategoryViewModel.java	(revision f7afc82a9f73983acc1a8753bc2b7f4bcb0d01a8)
++++ app/src/main/java/com/example/shaf/wallety/Storage/ViewModel/CategoryViewModel.java	(date 1538589879000)
+@@ -4,6 +4,7 @@
+ import android.arch.lifecycle.AndroidViewModel;
+ import android.arch.lifecycle.LiveData;
+ import android.support.annotation.NonNull;
++import android.util.Log;
+ 
+ import com.example.shaf.wallety.Model.Category;
+ import com.example.shaf.wallety.Storage.CategoryRepository;
+@@ -28,8 +29,10 @@
+         return mAllCategories;
+     }
+ 
+-    public void insert(Category category) {
+-        mRepository.insert(category);
++    public boolean insert(Category category) {
++        boolean success = mRepository.insert(category);
++        Log.e("Exceptioncatching-vm", String.valueOf(success));
++        return success;
+     }
+ 
+     public void delete(Category category) {
+@@ -44,4 +47,8 @@
+         return mRepository.getCategoryID(categoryName);
+     }
+ 
++    public String getCategoryName(int categoryID) {
++        return mRepository.getCategoryName(categoryID);
++    }
++
+ }
+Index: app/src/main/java/com/example/shaf/wallety/Storage/CategoryRepository.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/java/com/example/shaf/wallety/Storage/CategoryRepository.java	(revision f7afc82a9f73983acc1a8753bc2b7f4bcb0d01a8)
++++ app/src/main/java/com/example/shaf/wallety/Storage/CategoryRepository.java	(date 1538590383000)
+@@ -2,7 +2,7 @@
+ 
+ import android.app.Application;
+ import android.arch.lifecycle.LiveData;
+-import android.content.AsyncQueryHandler;
++import android.database.sqlite.SQLiteConstraintException;
+ import android.os.AsyncTask;
+ import android.util.Log;
+ 
+@@ -27,20 +27,18 @@
+         return this.allCategories;
+     }
+ 
+-    public int getCategoryID(String categoryName) {
++    public boolean insert(Category category) {
++        boolean success=false;
+         try {
+-            return new getCategoryIDAsyncTask(categoryDao).execute(categoryName).get();
++            success = new insertAsyncTask(categoryDao).execute(category).get();
+ 
+         } catch (ExecutionException e) {
+             e.printStackTrace();
++
+         } catch (InterruptedException e) {
+             e.printStackTrace();
+         }
+-        return -1;
+-    }
+-
+-    public void insert(Category category) {
+-        new insertAsyncTask(categoryDao).execute(category);
++        return success;
+     }
+ 
+     public void delete(Category category) {
+@@ -51,12 +49,33 @@
+         new updateAsyncTask(categoryDao).execute(category);
+     }
+ 
++    public int getCategoryID(String categoryName) {
++        try {
++            return new getCategoryIDAsyncTask(categoryDao).execute(categoryName).get();
+ 
++        } catch (ExecutionException e) {
++            e.printStackTrace();
++        } catch (InterruptedException e) {
++            e.printStackTrace();
++        }
++        return -1;
++    }
+ 
+ 
++    public String getCategoryName(int categoryID) {
++        try {
++            return new getCategoryNameAsyncTask(categoryDao).execute(categoryID).get();
+ 
++        } catch (ExecutionException e) {
++            e.printStackTrace();
++        } catch (InterruptedException e) {
++            e.printStackTrace();
++        }
++        return "Unknown";
++    }
+ 
+-    private static class insertAsyncTask extends AsyncTask<Category, Void, Void> {
++
++    private static class insertAsyncTask extends AsyncTask<Category, Void, Boolean> {
+ 
+         private CategoryDao mAsyncTaskDao;
+ 
+@@ -65,9 +84,19 @@
+         }
+ 
+         @Override
+-        protected Void doInBackground(final Category... params) {
+-            mAsyncTaskDao.insert(params[0]);
+-            return null;
++        protected Boolean doInBackground(final Category... params) {
++            boolean success;
++            try {
++                mAsyncTaskDao.insert(params[0]);
++                success = true;
++
++            } catch (SQLiteConstraintException uniqueNameException){
++                Log.e("Exceptioncatching", "enter");
++                success = false;
++                Log.e("Exceptioncatching-catch", String.valueOf(success));
++            }
++            Log.e("Exceptioncatching-catch", String.valueOf(success));
++            return success;
+         }
+     }
+ 
+@@ -120,4 +149,21 @@
+             return categoryID;
+         }
+     }
++
++
++    private static class getCategoryNameAsyncTask extends AsyncTask<Integer, Void, String> {
++
++        private CategoryDao mAsyncTaskDao;
++
++        getCategoryNameAsyncTask(CategoryDao dao) {
++            mAsyncTaskDao = dao;
++        }
++
++        @Override
++        protected String doInBackground(final Integer... params) {
++            int categoryID = params[0];
++            String categoryName = mAsyncTaskDao.getCategoryName(categoryID);
++            return categoryName;
++        }
++    }
+ }
+Index: app/src/main/java/com/example/shaf/wallety/Storage/WalletyDatabase.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/java/com/example/shaf/wallety/Storage/WalletyDatabase.java	(revision f7afc82a9f73983acc1a8753bc2b7f4bcb0d01a8)
++++ app/src/main/java/com/example/shaf/wallety/Storage/WalletyDatabase.java	(date 1538590385000)
+@@ -1,13 +1,19 @@
+ package com.example.shaf.wallety.Storage;
+ 
++import android.arch.persistence.db.SupportSQLiteDatabase;
+ import android.arch.persistence.room.Database;
+ import android.arch.persistence.room.Room;
+ import android.arch.persistence.room.RoomDatabase;
+ import android.content.Context;
++import android.os.AsyncTask;
++import android.support.annotation.NonNull;
+ 
+ import com.example.shaf.wallety.Model.Account;
++import com.example.shaf.wallety.Model.Account.Account_init_data;
+ import com.example.shaf.wallety.Model.Category;
++import com.example.shaf.wallety.Model.Category.Category_init_data;
+ import com.example.shaf.wallety.Model.Transaction;
++import com.example.shaf.wallety.R;
+ import com.example.shaf.wallety.Storage.Dao.AccountDao;
+ import com.example.shaf.wallety.Storage.Dao.CategoryDao;
+ import com.example.shaf.wallety.Storage.Dao.TransactionDao;
+@@ -22,16 +28,63 @@
+ 
+     private static WalletyDatabase INSTANCE;
+ 
++    private static RoomDatabase.Callback roomDbCallback =
++            new RoomDatabase.Callback(){
++
++                @Override
++                public void onCreate (@NonNull SupportSQLiteDatabase db){
++                    super.onCreate(db);
++                    new PopulateDbAsync(INSTANCE).execute();
++                }
++            };
++
+     static WalletyDatabase getDatabase(final Context context) {
++
+         if (INSTANCE == null) {
+             synchronized (WalletyDatabase.class) {
++
+                 if (INSTANCE == null) {
+                     INSTANCE = Room.databaseBuilder(context.getApplicationContext(),
+-                            WalletyDatabase.class, "wallety_database")
++                            WalletyDatabase.class, context.getString(R.string.sqlDbName))
++                            .addCallback(roomDbCallback)
+                             .build();
+                 }
+             }
+         }
+         return INSTANCE;
+     }
++
++    private static class PopulateDbAsync extends AsyncTask<Void, Void, Void> {
++
++        private static final double ZERO_BALANCE = 0.00;
++        private final CategoryDao categoryDao;
++        private final AccountDao accountDao;
++
++        PopulateDbAsync(WalletyDatabase db) {
++            categoryDao = db.categoryDao();
++            accountDao = db.accountDao();
++        }
++
++        @Override
++        protected Void doInBackground(final Void... params) {
++            // initialise category table
++            for (Category_init_data item: Category_init_data.values())
++                categoryDao.insert(new Category(capitaliseWord(item.toString()), item.categoryColour()));
++
++            // initialise account table
++            for (Account_init_data item: Account_init_data.values())
++                accountDao.insert(new Account(capitaliseWord(item.toString()), ZERO_BALANCE));
++
++            return null;
++        }
++
++        private String capitaliseWord(String word) {
++            String lowercase = word.toLowerCase();
++            if (lowercase.contains("_"))
++                lowercase = lowercase.replace("_", " ");
++            return lowercase.substring(0,1).toUpperCase() + lowercase.substring(1);
++        }
++    }
++
++
+ }
+Index: app/src/main/java/com/example/shaf/wallety/AccountAdderActivity.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/java/com/example/shaf/wallety/AccountAdderActivity.java	(date 1538590384000)
++++ app/src/main/java/com/example/shaf/wallety/AccountAdderActivity.java	(date 1538590384000)
+@@ -0,0 +1,64 @@
++package com.example.shaf.wallety;
++
++import android.content.Context;
++import android.content.Intent;
++import android.os.Bundle;
++import android.support.design.widget.TextInputEditText;
++import android.support.v7.app.AppCompatActivity;
++import android.view.View;
++import android.widget.Button;
++
++public class AccountAdderActivity extends AppCompatActivity {
++
++    Context mContext = this;
++
++    TextInputEditText mAcc_Name_EditText;
++    TextInputEditText mAcc_Bal_EditText;
++
++    @Override
++    protected void onCreate(Bundle savedInstanceState) {
++        super.onCreate(savedInstanceState);
++        setContentView(R.layout.activity_account_adder);
++        getSupportActionBar().setElevation(0);
++        setTitle("Create Account");
++
++        mAcc_Name_EditText = findViewById(R.id.account_add_name);
++        mAcc_Bal_EditText = findViewById(R.id.account_add_balance);
++
++        Button addAccountButton = findViewById(R.id.new_account_button);
++        addAccountButton.setOnClickListener(new View.OnClickListener() {
++            @Override
++            public void onClick(View v) {
++                saveData();
++            }
++        });
++    }
++
++
++    private void saveData() {
++
++        String accountName = mAcc_Name_EditText.getText().toString().trim();
++        double accountBalance = Double.parseDouble(mAcc_Bal_EditText.getText().toString().trim());
++
++        Intent replyIntent = new Intent();
++        replyIntent.putExtra("accountName", accountName);
++        replyIntent.putExtra("accountBalance", accountBalance);
++
++
++//        if (mPosition == -100)
++//            replyIntent.putExtra("update", 0);
++//
++//        else {
++//            replyIntent.putExtra("update", 1);
++//            replyIntent.putExtra("position", mPosition);
++//        }
++
++        setResult(RESULT_OK, replyIntent);
++        finish();
++
++    }
++
++
++
++
++}
+Index: app/src/main/java/com/example/shaf/wallety/AccountList_Activity.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/java/com/example/shaf/wallety/AccountList_Activity.java	(date 1538590385000)
++++ app/src/main/java/com/example/shaf/wallety/AccountList_Activity.java	(date 1538590385000)
+@@ -0,0 +1,163 @@
++package com.example.shaf.wallety;
++
++import android.app.AlertDialog;
++import android.arch.lifecycle.Observer;
++import android.arch.lifecycle.ViewModelProviders;
++import android.content.DialogInterface;
++import android.content.Intent;
++import android.os.Bundle;
++import android.support.annotation.Nullable;
++import android.support.design.widget.FloatingActionButton;
++import android.support.v7.app.AppCompatActivity;
++import android.support.v7.widget.RecyclerView;
++import android.view.MenuItem;
++import android.view.View;
++import android.widget.Toast;
++
++import com.example.shaf.wallety.Model.Account;
++import com.example.shaf.wallety.Storage.ViewModel.AccountViewModel;
++
++import java.util.List;
++import java.util.Objects;
++
++public class AccountList_Activity extends AppCompatActivity {
++
++    public static final int REQUEST_NEW_ACCOUNT_DATA = 1024;
++    private AccountViewModel mAccountViewModel;
++    private AccountList_Adapter adapter_global;
++
++    @Override
++    protected void onCreate(Bundle savedInstanceState) {
++        super.onCreate(savedInstanceState);
++
++        setContentView(R.layout.activity_account_list);
++        Objects.requireNonNull(getSupportActionBar()).setElevation(0);
++        setTitle("Account List");
++
++        RecyclerView mRecyclerView = findViewById(R.id.account_recycler_view);
++
++        final AccountList_Adapter mAdapter = new AccountList_Adapter(AccountList_Activity.this);
++
++        mAccountViewModel = ViewModelProviders.of(this).get(AccountViewModel.class);
++        mAccountViewModel.getAllAccounts().observe(this, new Observer<List<Account>>() {
++            @Override
++            public void onChanged(@Nullable final List<Account> accountList) {
++                // Update the cached copy of the words in the adapter.
++                mAdapter.setAccountList(accountList);
++                adapter_global = mAdapter;
++            }
++        });
++
++
++        mRecyclerView.setAdapter(mAdapter);
++        mRecyclerView.addOnItemTouchListener(new RecyclerItemCustomListener(this,
++                mRecyclerView, new RecyclerItemCustomListener.OnItemClickListener() {
++            @Override
++            public void onItemClick(View view, int position) {
++                // loadTransactionEditor(position);
++
++            }
++
++            @Override
++            public void onLongItemClick(View view, int position) {
++                showDeleteDialogBox(position);
++            }
++        }));
++
++
++        FloatingActionButton fab = findViewById(R.id.account_list_fab);
++        fab.setOnClickListener(new View.OnClickListener() {
++            @Override
++            public void onClick(View view) {
++                Intent intent = new Intent(AccountList_Activity.this, AccountAdderActivity.class);
++
++                startActivityForResult(intent, REQUEST_NEW_ACCOUNT_DATA);
++            }
++        });
++
++        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
++    }
++
++
++    @Override
++    public void onBackPressed() {
++        super.onBackPressed();
++    }
++
++    @Override
++    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
++        super.onActivityResult(requestCode, resultCode, data);
++
++        if (data != null && resultCode == RESULT_OK && (requestCode == REQUEST_NEW_ACCOUNT_DATA)) {
++
++            String accountName = data.getStringExtra("accountName");
++            double accountBalance = data.getDoubleExtra("accountBalance", 0);
++
++//            int update = data.getIntExtra("update",0);
++//            int position = data.getIntExtra("position", -401);
++
++//            if (update == 0) {
++            Account account = new Account(accountName, accountBalance);
++            mAccountViewModel.insert(account);
++
++//            } else if (update == 1 && position != -401 ) {
++//                int transactionID = adapter_global.getTransacation(position).getId();
++//                Transaction transaction = new Transaction(transactionID, item, amount, month, year,
++//                        unixTime, type, categoryID, accountID);
++//                mTransactsViewModel.update(transaction);
++//            }
++
++            Toast.makeText(this, "Account Saved.", Toast.LENGTH_LONG).show();
++
++        }
++
++
++        else {
++            Toast.makeText(
++                    getApplicationContext(),
++                    "Unable to save data",
++                    Toast.LENGTH_SHORT).show();
++        }
++    }
++
++
++    @Override
++    public boolean onOptionsItemSelected(MenuItem item) {
++        switch (item.getItemId()) {
++            // Respond to the action bar's Up/Home button
++            case android.R.id.home:
++                finish();
++                return true;
++        }
++        return super.onOptionsItemSelected(item);
++    }
++
++    private void showDeleteDialogBox(int position) {
++        final int id = position;
++        AlertDialog.Builder builder = new AlertDialog.Builder(this);
++        builder.setMessage("Delete entry?");
++
++        builder.setPositiveButton("Delete", new DialogInterface.OnClickListener() {
++            @Override
++            public void onClick(DialogInterface dialog, int which) {
++                deleteEntry(id);
++            }
++        });
++
++        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
++            @Override
++            public void onClick(DialogInterface dialog, int which) {
++                if (dialog != null) dialog.dismiss();
++            }
++        });
++
++        AlertDialog alertDialog = builder.create();
++        alertDialog.show();
++    }
++
++    private void deleteEntry(int position){
++        mAccountViewModel.delete(adapter_global.getAccount(position));
++        Toast.makeText(this, R.string.deletion_success, Toast.LENGTH_LONG).show();
++    }
++
++}
+Index: app/src/main/java/com/example/shaf/wallety/AccountList_Adapter.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/java/com/example/shaf/wallety/AccountList_Adapter.java	(date 1538590383000)
++++ app/src/main/java/com/example/shaf/wallety/AccountList_Adapter.java	(date 1538590383000)
+@@ -0,0 +1,83 @@
++package com.example.shaf.wallety;
++
++import android.content.Context;
++import android.support.annotation.NonNull;
++import android.support.v7.widget.RecyclerView;
++import android.view.LayoutInflater;
++import android.view.View;
++import android.view.ViewGroup;
++import android.widget.TextView;
++import android.widget.Toast;
++
++import com.example.shaf.wallety.Model.Account;
++
++import java.util.List;
++
++public class AccountList_Adapter extends RecyclerView.Adapter<AccountList_Adapter.AccountViewHolder> {
++
++
++    private Context mContext;
++    private List<Account> mAccountList;
++
++    public AccountList_Adapter(Context context) {
++        mContext = context;
++    }
++
++
++    @NonNull
++    @Override
++    public AccountViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
++        View itemView = LayoutInflater.from(mContext)
++                .inflate(R.layout.account_list_item, parent, false);
++
++        return new AccountViewHolder(itemView);
++    }
++
++    @Override
++    public void onBindViewHolder(@NonNull AccountViewHolder holder, int position) {
++
++        if (mAccountList != null) {
++            Account current = mAccountList.get(position);
++            holder.accountNameView.setText(current.getAccountName());
++            holder.accountBalanceView.setText(String.valueOf(current.getAccountBalance()));
++
++        } else {
++            Toast.makeText(mContext, "Error displaying data", Toast.LENGTH_LONG).show();
++        }
++    }
++
++    @Override
++    public int getItemCount() {
++        if (mAccountList != null)
++            return mAccountList.size();
++        return 0;
++    }
++
++    void setAccountList(List<Account> accountList){
++        mAccountList = accountList;
++        notifyDataSetChanged();
++    }
++
++    public Account getAccount(int position) {
++        return mAccountList.get(position);
++    }
++
++
++    public class AccountViewHolder extends RecyclerView.ViewHolder {
++
++        private TextView accountNameView;
++        private TextView accountBalanceView;
++
++
++        public AccountViewHolder(final View listItemView) {
++            super(listItemView);
++
++            accountNameView = listItemView.findViewById(R.id.account_name_view);
++            accountBalanceView = listItemView.findViewById(R.id.account_balance_view);
++        }
++    }
++
++
++
++
++}
+Index: app/src/main/java/com/example/shaf/wallety/CategoryAdderActivity.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/java/com/example/shaf/wallety/CategoryAdderActivity.java	(revision f7afc82a9f73983acc1a8753bc2b7f4bcb0d01a8)
++++ app/src/main/java/com/example/shaf/wallety/CategoryAdderActivity.java	(date 1538590383000)
+@@ -2,15 +2,11 @@
+ 
+ import android.content.Context;
+ import android.content.Intent;
+-import android.content.SharedPreferences;
+ import android.os.Bundle;
+ import android.support.design.widget.TextInputEditText;
+ import android.support.v7.app.AppCompatActivity;
+ import android.view.View;
+ import android.widget.Button;
+-import android.widget.Toast;
+-
+-import java.util.Map;
+ 
+ public class CategoryAdderActivity extends AppCompatActivity {
+ 
+@@ -60,8 +56,6 @@
+ //            replyIntent.putExtra("update", 1);
+ //            replyIntent.putExtra("position", mPosition);
+ //        }
+-
+-
+         setResult(RESULT_OK, replyIntent);
+         finish();
+ 
+Index: app/src/main/java/com/example/shaf/wallety/CategoryListActivity.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/java/com/example/shaf/wallety/CategoryListActivity.java	(revision f7afc82a9f73983acc1a8753bc2b7f4bcb0d01a8)
++++ app/src/main/java/com/example/shaf/wallety/CategoryListActivity.java	(date 1538590384000)
+@@ -1,34 +1,29 @@
+ package com.example.shaf.wallety;
+ 
++import android.app.AlertDialog;
+ import android.arch.lifecycle.Observer;
+-import android.arch.lifecycle.ViewModel;
+ import android.arch.lifecycle.ViewModelProviders;
++import android.content.DialogInterface;
+ import android.content.Intent;
+ import android.os.Bundle;
+ import android.support.annotation.Nullable;
+ import android.support.design.widget.FloatingActionButton;
+-import android.support.design.widget.Snackbar;
+-import android.support.v4.app.NavUtils;
+ import android.support.v7.app.AppCompatActivity;
+ import android.support.v7.widget.RecyclerView;
+-import android.support.v7.widget.Toolbar;
+ import android.util.Log;
+ import android.view.MenuItem;
+ import android.view.View;
+ import android.widget.Toast;
+ 
+ import com.example.shaf.wallety.Model.Category;
+-import com.example.shaf.wallety.Model.Transaction;
+ import com.example.shaf.wallety.Storage.ViewModel.CategoryViewModel;
+-import com.example.shaf.wallety.Storage.ViewModel.TransactsViewModel;
+ 
+ import java.util.List;
+ 
+ public class CategoryListActivity extends AppCompatActivity {
+ 
+-    private RecyclerView mRecyclerView;
++    CategoryListAdapter adapter_global;
+     private CategoryViewModel mCategoryViewModel;
+-    private CategoryListAdapter adapter_global;
+     public static final int REQUEST_NEW_CATEGORY_DATA = 1024;
+ 
+ 
+@@ -36,18 +31,14 @@
+     protected void onCreate(Bundle savedInstanceState) {
+         super.onCreate(savedInstanceState);
+         setContentView(R.layout.activity_category_list);
+-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+-        setSupportActionBar(toolbar);
+-        toolbar.setElevation(0);
++        getSupportActionBar().setElevation(0);
+ 
+-        setTitle("Category List");
+-        mRecyclerView = findViewById(R.id.cat_recycler_view);
++        setTitle(getString(R.string.title_category_list_activity));
++        RecyclerView mRecyclerView = findViewById(R.id.cat_recycler_view);
+ 
+         final CategoryListAdapter mAdapter = new CategoryListAdapter(CategoryListActivity.this);
+-        adapter_global = mAdapter;
+ 
+         mCategoryViewModel = ViewModelProviders.of(this).get(CategoryViewModel.class);
+-
+         mCategoryViewModel.getAllCategories().observe(this, new Observer<List<Category>>() {
+             @Override
+             public void onChanged(@Nullable final List<Category> categoryList) {
+@@ -69,17 +60,15 @@
+ 
+             @Override
+             public void onLongItemClick(View view, int position) {
+-               // showDeleteDialogBox(position);
++               showDeleteDialogBox(position);
+             }
+         }));
+ 
+-
+-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
++        FloatingActionButton fab = findViewById(R.id.fab);
+         fab.setOnClickListener(new View.OnClickListener() {
+             @Override
+             public void onClick(View view) {
+                 Intent intent = new Intent(CategoryListActivity.this, CategoryAdderActivity.class);
+-
+                 startActivityForResult(intent, REQUEST_NEW_CATEGORY_DATA);
+             }
+         });
+@@ -87,27 +76,23 @@
+         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+     }
+ 
+-
+-    @Override
+-    public void onBackPressed() {
+-        super.onBackPressed();
+-    }
+-
+     @Override
+     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+         super.onActivityResult(requestCode, resultCode, data);
+ 
+         if (data != null && resultCode == RESULT_OK && (requestCode == REQUEST_NEW_CATEGORY_DATA)) {
+ 
+-            String categoryName = data.getStringExtra("categoryName");
+-            String categoryColour = data.getStringExtra("categoryColour");
++            String categoryName = data.getStringExtra(getString(R.string.intent_category_name));
++            String categoryColour = data.getStringExtra(getString(R.string.intent_category_colour));
+ 
+  //           int update = data.getIntExtra("update",0);
+ //            int position = data.getIntExtra("position", -401);
+ 
+     //        if (update == 0) {
+             Category category = new Category(categoryName, categoryColour);
+-            mCategoryViewModel.insert(category);
++
++            boolean insertion_success = mCategoryViewModel.insert(category);
++
+ 
+ //            } else if (update == 1 && position != -401 ) {
+ //                int transactionID = adapter_global.getTransacation(position).getId();
+@@ -115,17 +100,16 @@
+ //                        unixTime, type, categoryID, accountID);
+ //                mTransactsViewModel.update(transaction);
+ //            }
+-
+-            Toast.makeText(this, "Saved", Toast.LENGTH_SHORT).show();
++            Log.e("Exceptioncatc-activity", String.valueOf(insertion_success));
++            if (insertion_success)
++                Toast.makeText(this, R.string.saved_toast, Toast.LENGTH_LONG).show();
+ 
+-        }
+-
+-
++            else
++                Toast.makeText(this, R.string.cat_InsertionException, Toast.LENGTH_LONG).show();
++        } 
++        
+         else {
+-            Toast.makeText(
+-                    getApplicationContext(),
+-                    "Unable to save data",
+-                    Toast.LENGTH_SHORT).show();
++            Toast.makeText( getApplicationContext(), R.string.save_error, Toast.LENGTH_SHORT).show();
+         }
+     }
+ 
+@@ -142,4 +126,32 @@
+         return super.onOptionsItemSelected(item);
+     }
+ 
++    private void showDeleteDialogBox(int position) {
++        final int id = position;
++        AlertDialog.Builder builder = new AlertDialog.Builder(this);
++        builder.setMessage(R.string.delete_alertMsg);
++
++        builder.setPositiveButton(R.string.delete_dialog_option, new DialogInterface.OnClickListener() {
++            @Override
++            public void onClick(DialogInterface dialog, int which) {
++                deleteEntry(id);
++            }
++        });
++
++        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
++            @Override
++            public void onClick(DialogInterface dialog, int which) {
++                if (dialog != null) dialog.dismiss();
++            }
++        });
++
++        AlertDialog alertDialog = builder.create();
++        alertDialog.show();
++    }
++
++    private void deleteEntry(int position){
++        mCategoryViewModel.delete(adapter_global.getCategory(position));
++        Toast.makeText(this, "Deleted Entry", Toast.LENGTH_SHORT).show();
++    }
++
+ }
+Index: app/src/main/java/com/example/shaf/wallety/CategoryListAdapter.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/java/com/example/shaf/wallety/CategoryListAdapter.java	(revision f7afc82a9f73983acc1a8753bc2b7f4bcb0d01a8)
++++ app/src/main/java/com/example/shaf/wallety/CategoryListAdapter.java	(date 1538590384000)
+@@ -4,6 +4,7 @@
+ import android.graphics.Color;
+ import android.graphics.drawable.GradientDrawable;
+ import android.support.annotation.NonNull;
++import android.support.v7.widget.CardView;
+ import android.support.v7.widget.RecyclerView;
+ import android.view.LayoutInflater;
+ import android.view.View;
+@@ -32,8 +33,6 @@
+     public CategoryViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+         View itemView = LayoutInflater.from(mContext)
+                 .inflate(R.layout.category_list_item, parent, false);
+-
+-
+         return new CategoryViewHolder(itemView);
+     }
+ 
+@@ -44,9 +43,9 @@
+         if (mCategoryList != null) {
+             Category current = mCategoryList.get(position);
+             holder.categoryNameView.setText(current.getCategoryName());
+-
+             GradientDrawable colourIcon = (GradientDrawable) holder.categoryColourView.getBackground();
+             colourIcon.setColor(Color.parseColor(current.getCategoryColour()));
++//            holder.categoryCardView.setCardBackgroundColor(Color.parseColor(current.getCategoryColour()));
+ 
+         } else {
+             Toast.makeText(mContext, "Error displaying data", Toast.LENGTH_LONG).show();
+@@ -74,6 +73,7 @@
+ 
+         private TextView categoryNameView;
+         private ImageView categoryColourView;
++        private CardView categoryCardView;
+ 
+ 
+         public CategoryViewHolder(final View listItemView) {
+@@ -81,6 +81,7 @@
+ 
+             categoryNameView = listItemView.findViewById(R.id.cat_name_text_view);
+             categoryColourView = listItemView.findViewById(R.id.cat_colour_view);
++            categoryCardView = listItemView.findViewById(R.id.cat_card);
+         }
+     }
+ 
+Index: app/src/main/java/com/example/shaf/wallety/MainActivity.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/java/com/example/shaf/wallety/MainActivity.java	(revision f7afc82a9f73983acc1a8753bc2b7f4bcb0d01a8)
++++ app/src/main/java/com/example/shaf/wallety/MainActivity.java	(date 1538590383000)
+@@ -13,18 +13,17 @@
+ import android.support.design.widget.BottomNavigationView;
+ import android.support.design.widget.FloatingActionButton;
+ import android.support.v7.app.AppCompatActivity;
+-import android.support.v7.widget.CardView;
+ import android.support.v7.widget.RecyclerView;
+ import android.util.Log;
+ import android.view.Menu;
+ import android.view.MenuItem;
+ import android.view.View;
+-import android.widget.LinearLayout;
+ import android.widget.TextView;
+ import android.widget.Toast;
+ 
+-
++import com.example.shaf.wallety.Model.Category;
+ import com.example.shaf.wallety.Model.Transaction;
++import com.example.shaf.wallety.Storage.ViewModel.CategoryViewModel;
+ import com.example.shaf.wallety.Storage.ViewModel.TransactsViewModel;
+ import com.jjoe64.graphview.GraphView;
+ import com.jjoe64.graphview.series.DataPoint;
+@@ -80,7 +79,7 @@
+ 
+         getSupportActionBar().setElevation(0);
+         getSupportActionBar().collapseActionView();
+-        mTextMessage = (TextView) findViewById(R.id.message);
++        mTextMessage = findViewById(R.id.message);
+         mRecyclerView = findViewById(R.id.recycler_view);
+         graph = findViewById(R.id.graph);
+ 
+@@ -88,7 +87,7 @@
+         final TransactsAdapter mAdapter = new TransactsAdapter(MainActivity.this);
+         adapter_global = mAdapter;
+ 
+-        BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
++        BottomNavigationView navigation = findViewById(R.id.navigation);
+         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
+         navigation.setSelectedItemId(R.id.navigation_dashboard);
+ 
+@@ -101,8 +100,16 @@
+             }
+         });
+ 
++        CategoryViewModel mCategoryViewModel = ViewModelProviders.of(this).get(CategoryViewModel.class);
++        mCategoryViewModel.getAllCategories().observe(this, new Observer<List<Category>>() {
++            @Override
++            public void onChanged(@Nullable final List<Category> categoryList) {
++                // Update the cached copy of the words in the adapter.
++                mAdapter.setCategoryList(categoryList);
++            }
++        });
++
+         mTransactsViewModel = ViewModelProviders.of(this).get(TransactsViewModel.class);
+-
+         mTransactsViewModel.getAllTransactions().observe(this, new Observer<List<Transaction>>() {
+             @Override
+             public void onChanged(@Nullable final List<Transaction> transactions) {
+@@ -113,6 +120,7 @@
+         });
+ 
+ 
++
+         mRecyclerView.setAdapter(mAdapter);
+         mRecyclerView.addOnItemTouchListener(new RecyclerItemCustomListener(this,
+                 mRecyclerView, new RecyclerItemCustomListener.OnItemClickListener() {
+@@ -130,7 +138,7 @@
+ 
+ 
+ 
+-        GraphView graphView = (GraphView) findViewById(R.id.graphView);
++        GraphView graphView = findViewById(R.id.graphView);
+         LineGraphSeries<DataPoint> series = new LineGraphSeries<>(new DataPoint[] {
+                 new DataPoint(0, 1),
+                 new DataPoint(1, 5),
+@@ -237,12 +245,22 @@
+ 
+     @Override
+     public boolean onCreateOptionsMenu(Menu menu) {
+-        return super.onCreateOptionsMenu(menu);
+-
++        // Inflate the menu; this adds items to the action bar if it is present.
++        getMenuInflater().inflate(R.menu.menu_main, menu);
++        return true;
+     }
+ 
+     @Override
+     public boolean onOptionsItemSelected(MenuItem item) {
++        int id = item.getItemId();
++
++        //noinspection SimplifiableIfStatement
++        if (id == R.id.account_list) {
++            Intent intent = new Intent(this, AccountList_Activity.class);
++            startActivity(intent);
++            return true;
++        }
++
+         return super.onOptionsItemSelected(item);
+     }
+ 
+Index: app/src/main/java/com/example/shaf/wallety/TransactsAdapter.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/java/com/example/shaf/wallety/TransactsAdapter.java	(revision f7afc82a9f73983acc1a8753bc2b7f4bcb0d01a8)
++++ app/src/main/java/com/example/shaf/wallety/TransactsAdapter.java	(date 1538590383000)
+@@ -1,6 +1,8 @@
+ package com.example.shaf.wallety;
+ 
++import android.app.Activity;
+ import android.content.Context;
++import android.graphics.Color;
+ import android.support.annotation.NonNull;
+ import android.support.v7.widget.RecyclerView;
+ import android.view.LayoutInflater;
+@@ -9,7 +11,7 @@
+ import android.widget.TextView;
+ import android.widget.Toast;
+ 
+-
++import com.example.shaf.wallety.Model.Category;
+ import com.example.shaf.wallety.Model.Transaction;
+ 
+ import java.text.SimpleDateFormat;
+@@ -19,7 +21,9 @@
+ 
+ 
+     private Context mContext;
++    private Activity mActivity;
+     private List<Transaction> mTransactions;
++    private List<Category> mCategoryList;
+ 
+     public TransactsAdapter(Context context) {
+         mContext = context;
+@@ -29,6 +33,8 @@
+     @NonNull
+     @Override
+     public TransactsViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
++
++
+         View itemView = LayoutInflater.from(mContext)
+                 .inflate(R.layout.list_item, parent, false);
+ 
+@@ -42,9 +48,11 @@
+ 
+         if (mTransactions != null) {
+             Transaction current = mTransactions.get(position);
++            Category currentCategory = getCategory(current.getCategoryID());
+ 
+             holder.itemView.setText(current.getItem());
+-            holder.categoryView.setText(String.valueOf(current.getCategoryID()));
++            holder.categoryView.setText(currentCategory.getCategoryName());
++            holder.categoryView.setTextColor(Color.parseColor(currentCategory.getCategoryColour()));
+ 
+             if (current.getAccountID() == TransactEditorActivity.ACCT_CASH)
+                 holder.acctView.setText(R.string.account_cash);
+@@ -66,6 +74,16 @@
+         }
+     }
+ 
++    private Category getCategory(int categoryID) {
++        Category category;
++
++        for (Category item: mCategoryList) {
++            if (item.getCategoryID() == categoryID)
++                return item;
++        }
++        return null;
++    }
++
+     @Override
+     public int getItemCount() {
+         if (mTransactions != null)
+@@ -73,10 +91,15 @@
+         return 0;
+     }
+ 
+-    void setTransactions(List<Transaction> transactions){
++    public void setTransactions(List<Transaction> transactions){
+         mTransactions = transactions;
+         notifyDataSetChanged();
+ 
++    }
++
++    public void setCategoryList(List<Category> categoryList) {
++        this.mCategoryList = categoryList;
++        notifyDataSetChanged();
+     }
+ 
+     public Transaction getTransacation(int position) {
+Index: app/src/main/res/layout/account_list_item.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/res/layout/account_list_item.xml	(date 1538590385000)
++++ app/src/main/res/layout/account_list_item.xml	(date 1538590385000)
+@@ -0,0 +1,59 @@
++<?xml version="1.0" encoding="utf-8"?>
++
++
++<android.support.v7.widget.CardView
++    xmlns:android="http://schemas.android.com/apk/res/android"
++    xmlns:app="http://schemas.android.com/apk/res-auto"
++    xmlns:tools="http://schemas.android.com/tools"
++    android:id="@+id/card"
++    android:layout_width="match_parent"
++    android:layout_height="56dp"
++    android:layout_marginBottom="12dp"
++    android:layout_marginLeft="12dp"
++    android:layout_marginRight="12dp"
++    app:cardBackgroundColor="@color/colorPrimary"
++    app:cardCornerRadius="12dp"
++    app:cardElevation="8dp">
++
++    <android.support.constraint.ConstraintLayout
++        android:layout_width="match_parent"
++        android:layout_height="wrap_content"
++        android:layout_gravity="center">
++
++
++        <LinearLayout
++            android:layout_width="match_parent"
++            android:layout_height="match_parent"
++            android:gravity="center_vertical"
++            android:orientation="horizontal">
++
++
++            <TextView
++                android:id="@+id/account_name_view"
++                android:layout_width="wrap_content"
++                android:layout_height="wrap_content"
++                android:layout_marginLeft="16dp"
++                android:layout_marginRight="16dp"
++                android:textColor="@color/white"
++                android:textSize="24sp"
++                tools:text="Bank"/>
++
++            <TextView
++                android:id="@+id/account_balance_view"
++                android:layout_width="wrap_content"
++                android:layout_height="wrap_content"
++                android:textColor="@color/lime_deep"
++                android:textSize="24sp"
++                tools:text="$7326.00" />
++
++
++
++        </LinearLayout>
++
++
++    </android.support.constraint.ConstraintLayout>
++
++
++</android.support.v7.widget.CardView>
++
++
+Index: app/src/main/res/layout/activity_account_adder.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/res/layout/activity_account_adder.xml	(date 1538590385000)
++++ app/src/main/res/layout/activity_account_adder.xml	(date 1538590385000)
+@@ -0,0 +1,74 @@
++<?xml version="1.0" encoding="utf-8"?>
++<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
++    xmlns:app="http://schemas.android.com/apk/res-auto"
++    android:layout_width="match_parent"
++    android:layout_height="match_parent"
++    android:background="@color/colorPrimaryDark"
++    android:orientation="vertical"
++    android:paddingEnd="16dp"
++    android:paddingStart="16dp">
++
++    <TextView
++        android:layout_width="wrap_content"
++        android:layout_height="wrap_content"
++        android:paddingBottom="4dp"
++        android:paddingTop="8dp"
++        android:text="@string/account_name"
++        android:textColor="@color/off_white" />
++
++    <android.support.design.widget.TextInputLayout
++        style="@style/InputFieldStyle"
++        android:layout_width="match_parent"
++        android:layout_height="wrap_content"
++        android:layout_marginBottom="8dp"
++        android:background="@color/colorPrimary"
++        app:hintEnabled="false">
++
++        <android.support.design.widget.TextInputEditText
++            android:id="@+id/account_add_name"
++            android:layout_width="match_parent"
++            android:layout_height="wrap_content"
++            android:background="@android:color/transparent"
++            android:backgroundTint="@color/colorPrimary"
++            android:maxLines="1" />
++    </android.support.design.widget.TextInputLayout>
++
++
++    <TextView
++        android:layout_width="wrap_content"
++        android:layout_height="wrap_content"
++        android:paddingBottom="4dp"
++        android:paddingTop="8dp"
++        android:text="@string/balance"
++        android:textColor="@color/off_white" />
++
++
++    <android.support.design.widget.TextInputLayout
++        style="@style/InputFieldStyle"
++        android:layout_width="match_parent"
++        android:layout_height="wrap_content"
++        android:layout_marginBottom="8dp"
++        android:background="@color/colorPrimary"
++        app:hintEnabled="false">
++
++        <android.support.design.widget.TextInputEditText
++            android:id="@+id/account_add_balance"
++            android:layout_width="match_parent"
++            android:layout_height="wrap_content"
++            android:background="@android:color/transparent"
++            android:backgroundTint="@color/colorPrimary"
++            android:inputType="numberDecimal"
++            android:maxLines="1"
++            android:nestedScrollingEnabled="false" />
++    </android.support.design.widget.TextInputLayout>
++
++    <Button
++        android:id="@+id/new_account_button"
++        android:layout_width="wrap_content"
++        android:layout_height="48dp"
++        android:layout_gravity="center"
++        android:backgroundTint="@color/colorAccent"
++        android:text="@string/add"
++        android:textColor="#ffffff" />
++
++</LinearLayout>
+\ No newline at end of file
+Index: app/src/main/res/layout/activity_account_list.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/res/layout/activity_account_list.xml	(date 1538590385000)
++++ app/src/main/res/layout/activity_account_list.xml	(date 1538590385000)
+@@ -0,0 +1,34 @@
++<?xml version="1.0" encoding="utf-8"?>
++<android.support.design.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
++    xmlns:app="http://schemas.android.com/apk/res-auto"
++    xmlns:tools="http://schemas.android.com/tools"
++    android:layout_width="match_parent"
++    android:layout_height="match_parent"
++    tools:context=".AccountList_Activity">
++
++    <!--android.support.design.widget.AppBarLayout
++        android:layout_width="match_parent"
++        android:layout_height="wrap_content"
++        android:theme="@style/AppTheme.AppBarOverlay">
++
++        <android.support.v7.widget.Toolbar
++            android:id="@+id/account_toolbar"
++            android:layout_width="match_parent"
++            android:layout_height="?attr/actionBarSize"
++            android:background="?attr/colorPrimary"
++            app:popupTheme="@style/AppTheme.PopupOverlay" />
++
++    </android.support.design.widget.AppBarLayout-->
++
++    <include layout="@layout/content_account_list" />
++
++    <android.support.design.widget.FloatingActionButton
++        android:id="@+id/account_list_fab"
++        android:layout_width="wrap_content"
++        android:layout_height="wrap_content"
++        android:layout_gravity="bottom|right"
++        android:layout_margin="@dimen/fab_margin"
++        android:tint="#fff"
++        app:srcCompat="@android:drawable/ic_input_add" />
++
++</android.support.design.widget.CoordinatorLayout>
+\ No newline at end of file
+Index: app/src/main/res/layout/activity_category_list.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/res/layout/activity_category_list.xml	(revision f7afc82a9f73983acc1a8753bc2b7f4bcb0d01a8)
++++ app/src/main/res/layout/activity_category_list.xml	(date 1538585203000)
+@@ -8,34 +8,6 @@
+     android:fitsSystemWindows="true"
+     tools:context=".CategoryListActivity">
+ 
+-    <android.support.design.widget.AppBarLayout
+-        android:id="@+id/app_bar"
+-        android:layout_width="match_parent"
+-        android:layout_height="@dimen/app_bar_height"
+-        android:fitsSystemWindows="true"
+-        android:theme="@style/AppTheme.AppBarOverlay">
+-
+-        <android.support.design.widget.CollapsingToolbarLayout
+-            android:id="@+id/toolbar_layout"
+-            android:layout_width="match_parent"
+-            android:background="@color/salmon"
+-
+-            android:layout_height="match_parent"
+-            android:fitsSystemWindows="true"
+-            app:contentScrim="?attr/colorPrimary"
+-            app:layout_scrollFlags="scroll|exitUntilCollapsed"
+-            app:toolbarId="@+id/toolbar">
+-
+-            <android.support.v7.widget.Toolbar
+-                android:id="@+id/toolbar"
+-                android:layout_width="match_parent"
+-                android:layout_height="?attr/actionBarSize"
+-                app:layout_collapseMode="pin"
+-                app:popupTheme="@style/AppTheme.PopupOverlay" />
+-
+-        </android.support.design.widget.CollapsingToolbarLayout>
+-    </android.support.design.widget.AppBarLayout>
+-
+     <include layout="@layout/content_category_list" />
+ 
+     <android.support.design.widget.FloatingActionButton
+Index: app/src/main/res/layout/category_list_item.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/res/layout/category_list_item.xml	(revision f7afc82a9f73983acc1a8753bc2b7f4bcb0d01a8)
++++ app/src/main/res/layout/category_list_item.xml	(date 1538588242000)
+@@ -1,18 +1,15 @@
+ <?xml version="1.0" encoding="utf-8"?>
+-
+-
+-<android.support.v7.widget.CardView
+-    xmlns:android="http://schemas.android.com/apk/res/android"
++<android.support.v7.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+     xmlns:app="http://schemas.android.com/apk/res-auto"
+     xmlns:tools="http://schemas.android.com/tools"
+-    android:id="@+id/card"
+-    app:cardBackgroundColor="@color/colorPrimary"
++    android:id="@+id/cat_card"
+     android:layout_width="match_parent"
++    android:layout_height="@dimen/cat_card_ht"
+     android:layout_marginBottom="12dp"
+     android:layout_marginLeft="12dp"
+     android:layout_marginRight="12dp"
++    app:cardBackgroundColor="@color/colorPrimary"
+     app:cardCornerRadius="12dp"
+-    android:layout_height="48dp"
+     app:cardElevation="8dp">
+ 
+     <android.support.constraint.ConstraintLayout
+@@ -20,37 +17,34 @@
+         android:layout_height="wrap_content"
+         android:layout_gravity="center">
+ 
+-
+         <LinearLayout
+             android:layout_width="match_parent"
+             android:layout_height="match_parent"
+             android:gravity="center_vertical"
+             android:orientation="horizontal">
+ 
+-
+             <ImageView
+                 android:id="@+id/cat_colour_view"
+                 android:layout_width="18dp"
+-                android:background="@drawable/circle"
+-                android:layout_marginLeft="16dp"
+-                android:layout_marginRight="16dp"
+                 android:layout_height="18dp"
++                android:layout_marginLeft="12dp"
++                android:layout_marginRight="12dp"
++                android:background="@drawable/circle"
+                 android:textColor="@color/white" />
+ 
+             <TextView
+                 android:id="@+id/cat_name_text_view"
+                 android:layout_width="wrap_content"
+                 android:layout_height="wrap_content"
++                android:maxLines="1"
+                 android:textColor="@color/white"
+-                android:textSize="18sp"
+-                tools:text="Dinner"/>
++                android:textSize="@dimen/list_name_text_size"
++                tools:text="Dinner" />
+ 
+         </LinearLayout>
+ 
+-
+     </android.support.constraint.ConstraintLayout>
+ 
+-
+ </android.support.v7.widget.CardView>
+ 
+ 
+Index: app/src/main/res/layout/content_account_list.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/res/layout/content_account_list.xml	(date 1538590385000)
++++ app/src/main/res/layout/content_account_list.xml	(date 1538590385000)
+@@ -0,0 +1,24 @@
++<?xml version="1.0" encoding="utf-8"?>
++<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
++    xmlns:app="http://schemas.android.com/apk/res-auto"
++    xmlns:tools="http://schemas.android.com/tools"
++    android:layout_width="match_parent"
++    android:layout_height="match_parent"
++    android:background="@color/colorPrimaryDark"
++    app:layout_behavior="@string/appbar_scrolling_view_behavior"
++    tools:context=".AccountList_Activity"
++    tools:showIn="@layout/activity_account_list">
++
++
++        <android.support.v7.widget.RecyclerView
++            android:id="@+id/account_recycler_view"
++            android:layout_width="match_parent"
++            android:layout_height="match_parent"
++            android:paddingLeft="8dp"
++            android:paddingRight="8dp"
++            android:paddingTop="16dp"
++            app:layoutManager="android.support.v7.widget.LinearLayoutManager"
++            app:layout_behavior="@string/appbar_scrolling_view_behavior"
++            app:layout_constraintTop_toTopOf="parent"/>
++
++</android.support.constraint.ConstraintLayout>
+\ No newline at end of file
+Index: app/src/main/res/layout/content_category_list.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/res/layout/content_category_list.xml	(revision f7afc82a9f73983acc1a8753bc2b7f4bcb0d01a8)
++++ app/src/main/res/layout/content_category_list.xml	(date 1538589035000)
+@@ -11,14 +11,13 @@
+     <android.support.v7.widget.RecyclerView
+         android:id="@+id/cat_recycler_view"
+         android:layout_width="match_parent"
+-        android:paddingTop="16dp"
++        android:layout_height="match_parent"
+         android:paddingLeft="8dp"
+         android:paddingRight="8dp"
+-        android:layout_height="match_parent"
+-        app:spanCount="2"
+-        app:layout_constraintTop_toTopOf="parent"
++        android:paddingTop="16dp"
++        app:layoutManager="android.support.v7.widget.LinearLayoutManager"
+         app:layout_behavior="@string/appbar_scrolling_view_behavior"
+-        app:layoutManager="android.support.v7.widget.GridLayoutManager"/>
++        app:layout_constraintTop_toTopOf="parent" />
+ 
+ 
+ </android.support.v4.widget.NestedScrollView>
+\ No newline at end of file
+Index: app/src/main/res/menu/menu_main.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/res/menu/menu_main.xml	(date 1538505768000)
++++ app/src/main/res/menu/menu_main.xml	(date 1538505768000)
+@@ -0,0 +1,10 @@
++<menu xmlns:android="http://schemas.android.com/apk/res/android"
++    xmlns:app="http://schemas.android.com/apk/res-auto"
++    xmlns:tools="http://schemas.android.com/tools"
++    tools:context="com.example.shaf.wallety.CategoryListActivity">
++    <item
++        android:id="@+id/account_list"
++        android:orderInCategory="100"
++        android:title="@string/accounts"
++        app:showAsAction="never" />
++</menu>
+Index: app/src/main/res/values/dimens.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/res/values/dimens.xml	(revision f7afc82a9f73983acc1a8753bc2b7f4bcb0d01a8)
++++ app/src/main/res/values/dimens.xml	(date 1538588242000)
+@@ -5,4 +5,6 @@
+     <dimen name="app_bar_height">180dp</dimen>
+     <dimen name="fab_margin">16dp</dimen>
+     <dimen name="text_margin">16dp</dimen>
++    <dimen name="list_name_text_size">18sp</dimen>
++    <dimen name="cat_card_ht">48dp</dimen>
+ </resources>
+Index: app/src/main/res/values/strings.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/res/values/strings.xml	(revision f7afc82a9f73983acc1a8753bc2b7f4bcb0d01a8)
++++ app/src/main/res/values/strings.xml	(date 1538589035000)
+@@ -111,5 +111,19 @@
+         "when a user tries to pick up one of cards.\n\n"
+     </string>
+     <string name="action_settings">Settings</string>
++    <string name="title_activity_account_list">AccountList</string>
++    <string name="account_name">Account Name</string>
++    <string name="balance">Balance</string>
++    <string name="accounts">Accounts</string>
++    <string name="cat_InsertionException">Error. Category already exists.</string>
++    <string name="intent_category_name">categoryName</string>
++    <string name="intent_category_colour">categoryColour</string>
++    <string name="save_error">Unable to save data</string>
++    <string name="saved_toast">Saved</string>
++    <string name="title_category_list_activity">Category List</string>
++    <string name="delete_dialog_option">Delete</string>
++    <string name="delete_alertMsg">Delete entry?</string>
++    <string name="deletion_success">Deleted Entry</string>
++    <string name="sqlDbName">wallety_database</string>
+ 
+ </resources>
+Index: app/src/main/AndroidManifest.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/src/main/AndroidManifest.xml	(revision f7afc82a9f73983acc1a8753bc2b7f4bcb0d01a8)
++++ app/src/main/AndroidManifest.xml	(date 1538569147000)
+@@ -39,12 +39,29 @@
+         <activity
+             android:name=".CategoryListActivity"
+             android:label="@string/title_activity_category_list"
+-            android:parentActivityName=".TransactEditorActivity"
+-            android:theme="@style/AppTheme.NoActionBar">
++            android:parentActivityName=".TransactEditorActivity">
+             <meta-data
+                 android:name="android.support.PARENT_ACTIVITY"
+                 android:value="com.example.shaf.wallety.TransactEditorActivity" />
+         </activity>
++        <activity
++            android:name=".AccountList_Activity"
++            android:label="@string/title_activity_account_list"
++            android:parentActivityName=".MainActivity">
++            <meta-data
++                android:name="android.support.PARENT_ACTIVITY"
++                android:value="com.example.shaf.wallety.MainActivity" />
++        </activity>
++
++        <activity
++            android:name=".AccountAdderActivity"
++            android:label="@string/title_activity_account_list"
++            android:parentActivityName=".AccountList_Activity">
++            <meta-data
++                android:name="android.support.PARENT_ACTIVITY"
++                android:value="com.example.shaf.wallety.AccountList_Activity" />
++        </activity>
++
+     </application>
+ 
+ </manifest>
+\ No newline at end of file
+diff --git .idea/caches/build_file_checksums.ser .idea/caches/build_file_checksums.ser
+index 90f5d019b669179644022839a14ae6f2359e6276..f22606e7449cf69789b086e735aeae91962ff561
+GIT binary patch
+literal 534
+zc${1FmVvdnh`~NNKUXg?FQq6yGexf?KR>5fFEb@IQ7^qHF(oHeub?PDD>b=9F91S2
+zm1gFoxMk*~I%lLNXBU^|7Q2L-Ts|(GuF1r}<i#MFTj`TnT;dMa8(f)}9Fm!vT3nKt
+zTj0aMpIeEdv4nx&Co8cmQNOe#Ge_SyvB0{bfPsNA&5XG*7w9fQkenV!PR}E;I0Gop
+z%6{wMVX=gZ%nVF!3|u++i79T0$tC$ko(!BN8AYkZ8TmOW6$SPV3?RT$&H*F^fS3(v
+zQE_TXNoHPpG1OP3MGQ>QPHR4k|6t<?dBDWL0J51uVEI3(!xJ;NKGled3r^Ell`di6
+zNdoy7rmK*lj)4uN@b(SwOUrd8y=R$lk5O~IwnGVnKu&&gVh$*@3Q~(oGE<8Yidn-R
+zCbybSeLQ*6Bpy{UtrH~-s`{bDsYS*5#Tkid`cT955#fzt!WG$`oBa%%SY9@8&Uo{~
+zsjh@U5RYns-DLsi-)jD_SmkiA;8T)5&~b?c1^U>1vh>^kJ8P9TU0z<Ms$V?adtwCu
+D{qMQ=
+

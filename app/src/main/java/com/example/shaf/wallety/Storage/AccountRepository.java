@@ -6,8 +6,10 @@ import android.os.AsyncTask;
 
 import com.example.shaf.wallety.Model.Account;
 import com.example.shaf.wallety.Storage.Dao.AccountDao;
+import com.example.shaf.wallety.Storage.Dao.CategoryDao;
 
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 public class AccountRepository {
 
@@ -36,7 +38,34 @@ public class AccountRepository {
         new updateAsyncTask(accountDao).execute(account);
     }
 
+    public int getAccountID(String accountName) {
+        try {
+            return new AccountRepository.getAccountIDAsyncTask(accountDao).execute(accountName).get();
 
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return -1;
+    }
+
+
+    private static class getAccountIDAsyncTask extends AsyncTask<String, Void, Integer> {
+
+        private AccountDao mAsyncTaskDao;
+
+        getAccountIDAsyncTask(AccountDao dao) {
+            mAsyncTaskDao = dao;
+        }
+
+        @Override
+        protected Integer doInBackground(final String... params) {
+            String accountName = params[0];
+            int accountID = mAsyncTaskDao.getAccountID(accountName);
+            return accountID;
+        }
+    }
 
 
 
@@ -85,7 +114,7 @@ public class AccountRepository {
             String accountName = params[0].getAccountName();
             double accountBalance = params[0].getAccountBalance();
 
-            mAsyncTaskDao.updateTransaction(accountID, accountName, accountBalance);
+            mAsyncTaskDao.updateAccount(accountID, accountName, accountBalance);
             return null;
         }
     }

@@ -4,6 +4,7 @@ import android.app.Application;
 import android.arch.lifecycle.AndroidViewModel;
 import android.arch.lifecycle.LiveData;
 import android.support.annotation.NonNull;
+import android.util.Log;
 
 
 import com.example.shaf.wallety.Model.Transaction;
@@ -38,6 +39,7 @@ public class TransactsViewModel extends AndroidViewModel {
     }
 
     public void update(Transaction transaction) {
+        Log.e("tran_viewmodel", String.valueOf(transaction.getCategoryID()));
         mRepository.update(transaction);
     }
 

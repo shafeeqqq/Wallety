@@ -16,7 +16,6 @@ public class AccountViewModel extends AndroidViewModel {
 
     private LiveData<List<Account>> mAllAccounts;
 
-
     public AccountViewModel(@NonNull Application application) {
         super(application);
 
@@ -38,6 +37,10 @@ public class AccountViewModel extends AndroidViewModel {
 
     public void update(Account account) {
         mRepository.update(account);
+    }
+
+    public int getAccountID(String accountName) {
+        return mRepository.getAccountID(accountName);
     }
 
 }

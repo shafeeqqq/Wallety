@@ -46,6 +46,7 @@ public class CategoryRepository {
     }
 
     public void update(Category category) {
+        Log.e("cate_repo", String.valueOf(category.getCategoryID()));
         new updateAsyncTask(categoryDao).execute(category);
     }
 
@@ -128,8 +129,9 @@ public class CategoryRepository {
             int categoryID = params[0].getCategoryID();
             String categoryName = params[0].getCategoryName();
             String categoryColour = params[0].getCategoryColour();
-      
-            mAsyncTaskDao.updateTransaction(categoryID, categoryName, categoryColour);
+
+            Log.e("cate_stored",String.valueOf(categoryID));
+            mAsyncTaskDao.updateCategory(categoryID, categoryName, categoryColour);
             return null;
         }
     }

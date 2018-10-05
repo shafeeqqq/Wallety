@@ -31,7 +31,6 @@ public class CategoryViewModel extends AndroidViewModel {
 
     public boolean insert(Category category) {
         boolean success = mRepository.insert(category);
-        Log.e("Exceptioncatching-vm", String.valueOf(success));
         return success;
     }
 

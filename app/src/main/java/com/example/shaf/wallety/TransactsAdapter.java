@@ -5,12 +5,14 @@ import android.content.Context;
 import android.graphics.Color;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.shaf.wallety.Model.Account;
 import com.example.shaf.wallety.Model.Category;
 import com.example.shaf.wallety.Model.Transaction;
 
@@ -21,9 +23,10 @@ public class TransactsAdapter extends RecyclerView.Adapter<TransactsAdapter.Tran
 
 
     private Context mContext;
-    private Activity mActivity;
+
     private List<Transaction> mTransactions;
     private List<Category> mCategoryList;
+    private List<Account> mAccountList;
 
     public TransactsAdapter(Context context) {
         mContext = context;
@@ -45,19 +48,25 @@ public class TransactsAdapter extends RecyclerView.Adapter<TransactsAdapter.Tran
     @Override
     public void onBindViewHolder(@NonNull TransactsViewHolder holder, int position) {
 
-
         if (mTransactions != null) {
             Transaction current = mTransactions.get(position);
             Category currentCategory = getCategory(current.getCategoryID());
+            Account currentAccount = getAccount(current.getAccountID());
 
             holder.itemView.setText(current.getItem());
-            holder.categoryView.setText(currentCategory.getCategoryName());
-            holder.categoryView.setTextColor(Color.parseColor(currentCategory.getCategoryColour()));
 
-            if (current.getAccountID() == TransactEditorActivity.ACCT_CASH)
-                holder.acctView.setText(R.string.account_cash);
-            else
-                holder.acctView.setText(R.string.account_bank);
+            Log.e("cate_a", String.valueOf(currentCategory == null));
+
+            if (currentCategory != null) {
+                Log.e("cate_an", String.valueOf(currentCategory.getCategoryName()));
+                holder.categoryView.setText(currentCategory.getCategoryName());
+                holder.categoryView.setTextColor(Color.parseColor(currentCategory.getCategoryColour()));
+            }
+
+            if (currentAccount != null) {
+                holder.acctView.setText(currentAccount.getAccountName());
+            }
+
 
             SimpleDateFormat dateFormatter = new SimpleDateFormat("EEE, dd MMM");
             String dateToDisplay = dateFormatter.format(Long.valueOf(current.getUnixTime()));
@@ -67,19 +76,29 @@ public class TransactsAdapter extends RecyclerView.Adapter<TransactsAdapter.Tran
             holder.amountView.setText(String.format("$%.2f", amount));
             if (current.getType() == TransactEditorActivity.TYPE_EXPENSE)
                 holder.amountView.setTextColor(mContext.getResources().getColor(R.color.deep_orange));
-
+            else
+                holder.amountView.setTextColor(mContext.getResources().getColor(R.color.deep_green));
 
         } else {
             Toast.makeText(mContext, "Error displaying data", Toast.LENGTH_LONG).show();
         }
     }
 
-    private Category getCategory(int categoryID) {
-        Category category;
-
-        for (Category item: mCategoryList) {
-            if (item.getCategoryID() == categoryID)
+    private Account getAccount(int accountID) {
+        for (Account item: mAccountList) {
+            if (item.getAccountID() == accountID)
                 return item;
+        }
+        return null;
+    }
+
+    private Category getCategory(int categoryID) {
+        for (Category item: mCategoryList) {
+
+            if (item.getCategoryID() == categoryID) {
+                Log.e("cate_loop", "enter if");
+                return item;
+            }
         }
         return null;
     }
@@ -98,11 +117,16 @@ public class TransactsAdapter extends RecyclerView.Adapter<TransactsAdapter.Tran
     }
 
     public void setCategoryList(List<Category> categoryList) {
-        this.mCategoryList = categoryList;
+        mCategoryList = categoryList;
         notifyDataSetChanged();
     }
 
-    public Transaction getTransacation(int position) {
+    public void setAccountList(List<Account> accountList) {
+        mAccountList = accountList;
+        notifyDataSetChanged();
+    }
+
+    public Transaction getTransaction(int position) {
         return mTransactions.get(position);
     }
 

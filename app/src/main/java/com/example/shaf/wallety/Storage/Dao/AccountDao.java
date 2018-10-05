@@ -31,14 +31,9 @@ public interface AccountDao {
     void deleteAll();
 
     @Query("UPDATE account_table SET accountName=:a_Name, accountBalance=:a_balance WHERE accountID=:a_ID")
-    void updateTransaction(int a_ID, String a_Name, double a_balance);
+    void updateAccount(int a_ID, String a_Name, double a_balance);
 
-    /**
-     * create an Observer of the data in the onCreate() method of MainActivity
-     * override the observer's onChanged() method.
-     *
-     * When the LiveData changes, the observer is notified and
-     * onChanged() is executed. You will then update the cached data in the adapter, and the
-     * adapter will update what the user sees.
-     */
+    @Query("SELECT accountID from account_table WHERE accountName=:accountName")
+    int getAccountID(String accountName);
+    
 }
